@@ -15,7 +15,7 @@ pub struct U63OrPtr {
 
 impl U63OrPtr {
     /// Checks if the pointer was dynamically allocated
-    pub fn is_allocated(&self) -> bool {
+    pub const fn is_allocated(&self) -> bool {
         (self.data & (1 << 62)) != 0
     }
 }
@@ -41,7 +41,7 @@ impl U63OrPtr {
     const SIZE_MASK: u64 = (1 << 15) - 1; // 15-bit size mask
 
     /// Create a new U63 value
-    pub fn new_u63(value: u64) -> Result<Self, U63OrPtrError> {
+    pub const fn from_u63(value: u64) -> Result<Self, U63OrPtrError> {
         if value >= Self::DISCRIMINANT {
             Err(U63OrPtrError::ValueTooLarge)
         } else {
@@ -54,7 +54,7 @@ impl U63OrPtr {
     /// # Safety
     /// The caller must ensure that the pointer is properly aligned, non-null,
     /// and that the size fits within 15 bits.
-    pub fn new_ptr(ptr: NonNull<u8>, size: u16) -> Result<Self, U63OrPtrError> {
+    pub fn from_ptr(ptr: NonNull<u8>, size: u16) -> Result<Self, U63OrPtrError> {
         let addr = ptr.as_ptr() as u64;
         if addr & !Self::PTR_MASK != 0 {
             return Err(U63OrPtrError::InvalidPointer);
@@ -71,12 +71,12 @@ impl U63OrPtr {
     }
 
     /// Check if this is a u63 value
-    pub fn is_u63(&self) -> bool {
+    pub const fn is_u63(&self) -> bool {
         (self.data & Self::DISCRIMINANT) == 0
     }
 
     /// Check if this is a pointer
-    pub fn is_ptr(&self) -> bool {
+    pub const fn is_ptr(&self) -> bool {
         !self.is_u63()
     }
 
@@ -126,15 +126,24 @@ mod tests {
 
     #[test]
     fn test_u63() {
-        let val = U63OrPtr::new_u63(42).unwrap();
-        assert!(val.is_u63());
-        assert_eq!(val.expand(), U63OrPtrExpanded::U64(42));
+        let mut i = 0;
+        const MAX: u64 = u64::MAX >> 1;
+        const INC: u64 = MAX / 1_000_000;
+        loop {
+            let val = U63OrPtr::from_u63(i).unwrap();
+            assert!(val.is_u63());
+            assert_eq!(val.expand(), U63OrPtrExpanded::U64(i));
+            i += INC;
+            if i >= MAX {
+                break;
+            }
+        }
     }
 
     #[test]
     fn test_u63_too_large() {
         assert_eq!(
-            U63OrPtr::new_u63(1 << 63),
+            U63OrPtr::from_u63(1 << 63),
             Err(U63OrPtrError::ValueTooLarge)
         );
     }
@@ -144,7 +153,7 @@ mod tests {
         let layout = Layout::from_size_align(16, 8).unwrap();
         let raw_ptr = unsafe { alloc(layout) };
         let ptr = NonNull::new(raw_ptr).unwrap();
-        let val = U63OrPtr::new_ptr(ptr, 16).unwrap();
+        let val = U63OrPtr::from_ptr(ptr, 16).unwrap();
         assert!(val.is_ptr());
         if let U63OrPtrExpanded::Ptr(expanded_ptr, size) = val.expand() {
             assert_eq!(size, 16);
@@ -152,6 +161,5 @@ mod tests {
         } else {
             panic!("Expected a pointer variant");
         }
-        // Removed explicit deallocation to prevent double free
     }
 }
