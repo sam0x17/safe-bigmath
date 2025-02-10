@@ -1,6 +1,6 @@
 use core::{
     cmp::Ordering,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
+    ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
 };
 
 use rug::{ops::NegAssign, Integer};
@@ -25,128 +25,109 @@ impl NegAssign for SafeInt {
     }
 }
 
-impl Add for SafeInt {
-    type Output = SafeInt;
+macro_rules! impl_binary_op {
+    ($trait:ident, $method:ident) => {
+        impl $trait for SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: SafeInt) -> SafeInt {
+                SafeInt(self.0.$method(other.0))
+            }
+        }
+
+        impl $trait<&SafeInt> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(self.0.clone().$method(&other.0))
+            }
+        }
+
+        impl $trait<&SafeInt> for SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(self.0.$method(&other.0))
+            }
+        }
+
+        impl $trait<SafeInt> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: SafeInt) -> SafeInt {
+                SafeInt(self.0.clone().$method(other.0))
+            }
+        }
+    };
+}
+
+macro_rules! impl_assign_op {
+    ($trait:ident, $method:ident) => {
+        impl $trait for SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: SafeInt) {
+                self.0.$method(other.0);
+            }
+        }
+
+        impl $trait<&SafeInt> for SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: &SafeInt) {
+                self.0.$method(&other.0);
+            }
+        }
+    };
+}
+
+impl_binary_op!(Add, add);
+impl_binary_op!(Sub, sub);
+impl_binary_op!(Mul, mul);
+impl_binary_op!(Rem, rem);
+impl_assign_op!(AddAssign, add_assign);
+impl_assign_op!(SubAssign, sub_assign);
+impl_assign_op!(MulAssign, mul_assign);
+impl_assign_op!(RemAssign, rem_assign);
+
+impl Div for SafeInt {
+    type Output = Option<SafeInt>;
 
     #[inline(always)]
-    fn add(self, other: SafeInt) -> SafeInt {
-        SafeInt(self.0 + other.0)
+    fn div(self, other: SafeInt) -> Option<SafeInt> {
+        if other.0.is_zero() {
+            None
+        } else {
+            Some(SafeInt(self.0.div(other.0)))
+        }
     }
 }
 
-impl Add<&SafeInt> for &SafeInt {
-    type Output = SafeInt;
+impl Div<&SafeInt> for SafeInt {
+    type Output = Option<SafeInt>;
 
     #[inline(always)]
-    fn add(self, other: &SafeInt) -> SafeInt {
-        SafeInt(self.0.clone() + &other.0)
+    fn div(self, other: &SafeInt) -> Option<SafeInt> {
+        if other.0.is_zero() {
+            None
+        } else {
+            Some(SafeInt(self.0.div(&other.0)))
+        }
     }
 }
 
-impl Add<&SafeInt> for SafeInt {
-    type Output = SafeInt;
+impl Div<SafeInt> for &SafeInt {
+    type Output = Option<SafeInt>;
 
     #[inline(always)]
-    fn add(self, other: &SafeInt) -> SafeInt {
-        SafeInt(self.0 + &other.0)
-    }
-}
-
-impl Add<SafeInt> for &SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn add(self, other: SafeInt) -> SafeInt {
-        SafeInt(self.0.clone() + other.0)
-    }
-}
-
-impl AddAssign for SafeInt {
-    #[inline(always)]
-    fn add_assign(&mut self, other: SafeInt) {
-        self.0 += other.0;
-    }
-}
-
-impl AddAssign<&SafeInt> for SafeInt {
-    #[inline(always)]
-    fn add_assign(&mut self, other: &SafeInt) {
-        self.0 += &other.0;
-    }
-}
-
-impl Sub for SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn sub(self, other: SafeInt) -> SafeInt {
-        SafeInt(self.0 - other.0)
-    }
-}
-
-impl Sub<&SafeInt> for &SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn sub(self, other: &SafeInt) -> SafeInt {
-        SafeInt(self.0.clone() - &other.0)
-    }
-}
-
-impl Sub<&SafeInt> for SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn sub(self, other: &SafeInt) -> SafeInt {
-        SafeInt(self.0 - &other.0)
-    }
-}
-
-impl Sub<SafeInt> for &SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn sub(self, other: SafeInt) -> SafeInt {
-        SafeInt(self.0.clone() + other.0)
-    }
-}
-
-impl SubAssign for SafeInt {
-    #[inline(always)]
-    fn sub_assign(&mut self, other: SafeInt) {
-        self.0 -= other.0;
-    }
-}
-
-impl Mul for SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn mul(self, other: SafeInt) -> SafeInt {
-        SafeInt(self.0 * other.0)
-    }
-}
-
-impl MulAssign for SafeInt {
-    #[inline(always)]
-    fn mul_assign(&mut self, other: SafeInt) {
-        self.0 *= other.0;
-    }
-}
-
-impl Rem for SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn rem(self, other: SafeInt) -> SafeInt {
-        SafeInt(self.0 % other.0)
-    }
-}
-
-impl RemAssign for SafeInt {
-    #[inline(always)]
-    fn rem_assign(&mut self, other: SafeInt) {
-        self.0 %= other.0;
+    fn div(self, other: SafeInt) -> Option<SafeInt> {
+        if other.0.is_zero() {
+            None
+        } else {
+            Some(SafeInt(self.0.clone().div(other.0)))
+        }
     }
 }
 
@@ -189,4 +170,6 @@ fn general() {
     assert!(a < b);
     assert_eq!(e, f);
     assert_eq!(f, a + b);
+    assert_eq!((SafeInt::from(10) / SafeInt::from(3)).unwrap(), 3);
+    assert_eq!(SafeInt::from(10) / SafeInt::from(0), None);
 }
