@@ -34,10 +34,44 @@ impl Add for SafeInt {
     }
 }
 
+impl Add<&SafeInt> for &SafeInt {
+    type Output = SafeInt;
+
+    #[inline(always)]
+    fn add(self, other: &SafeInt) -> SafeInt {
+        SafeInt(self.0.clone() + &other.0)
+    }
+}
+
+impl Add<&SafeInt> for SafeInt {
+    type Output = SafeInt;
+
+    #[inline(always)]
+    fn add(self, other: &SafeInt) -> SafeInt {
+        SafeInt(self.0 + &other.0)
+    }
+}
+
+impl Add<SafeInt> for &SafeInt {
+    type Output = SafeInt;
+
+    #[inline(always)]
+    fn add(self, other: SafeInt) -> SafeInt {
+        SafeInt(self.0.clone() + other.0)
+    }
+}
+
 impl AddAssign for SafeInt {
     #[inline(always)]
     fn add_assign(&mut self, other: SafeInt) {
         self.0 += other.0;
+    }
+}
+
+impl AddAssign<&SafeInt> for SafeInt {
+    #[inline(always)]
+    fn add_assign(&mut self, other: &SafeInt) {
+        self.0 += &other.0;
     }
 }
 
@@ -47,6 +81,33 @@ impl Sub for SafeInt {
     #[inline(always)]
     fn sub(self, other: SafeInt) -> SafeInt {
         SafeInt(self.0 - other.0)
+    }
+}
+
+impl Sub<&SafeInt> for &SafeInt {
+    type Output = SafeInt;
+
+    #[inline(always)]
+    fn sub(self, other: &SafeInt) -> SafeInt {
+        SafeInt(self.0.clone() - &other.0)
+    }
+}
+
+impl Sub<&SafeInt> for SafeInt {
+    type Output = SafeInt;
+
+    #[inline(always)]
+    fn sub(self, other: &SafeInt) -> SafeInt {
+        SafeInt(self.0 - &other.0)
+    }
+}
+
+impl Sub<SafeInt> for &SafeInt {
+    type Output = SafeInt;
+
+    #[inline(always)]
+    fn sub(self, other: SafeInt) -> SafeInt {
+        SafeInt(self.0.clone() + other.0)
     }
 }
 
@@ -89,77 +150,6 @@ impl RemAssign for SafeInt {
     }
 }
 
-impl<T: Into<Integer>> From<T> for SafeInt {
-    #[inline(always)]
-    fn from(value: T) -> Self {
-        SafeInt(value.into())
-    }
-}
-
-impl<T: Into<Integer>> Add<T> for SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn add(self, other: T) -> SafeInt {
-        SafeInt(self.0 + other.into())
-    }
-}
-
-impl<T: Into<Integer>> AddAssign<T> for SafeInt {
-    #[inline(always)]
-    fn add_assign(&mut self, other: T) {
-        self.0 += other.into();
-    }
-}
-
-impl<T: Into<Integer>> Sub<T> for SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn sub(self, other: T) -> SafeInt {
-        SafeInt(self.0 - other.into())
-    }
-}
-
-impl<T: Into<Integer>> SubAssign<T> for SafeInt {
-    #[inline(always)]
-    fn sub_assign(&mut self, other: T) {
-        self.0 -= other.into();
-    }
-}
-
-impl<T: Into<Integer>> Mul<T> for SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn mul(self, other: T) -> SafeInt {
-        SafeInt(self.0 * other.into())
-    }
-}
-
-impl<T: Into<Integer>> MulAssign<T> for SafeInt {
-    #[inline(always)]
-    fn mul_assign(&mut self, other: T) {
-        self.0 *= other.into();
-    }
-}
-
-impl<T: Into<Integer>> Rem<T> for SafeInt {
-    type Output = SafeInt;
-
-    #[inline(always)]
-    fn rem(self, other: T) -> SafeInt {
-        SafeInt(self.0 % other.into())
-    }
-}
-
-impl<T: Into<Integer>> RemAssign<T> for SafeInt {
-    #[inline(always)]
-    fn rem_assign(&mut self, other: T) {
-        self.0 %= other.into();
-    }
-}
-
 impl<T: PartialEq<Integer>> PartialEq<T> for SafeInt {
     #[inline(always)]
     fn eq(&self, other: &T) -> bool {
@@ -178,14 +168,25 @@ impl<T: PartialOrd<Integer>> PartialOrd<T> for SafeInt {
     }
 }
 
+impl<T: Into<Integer>> From<T> for SafeInt {
+    #[inline(always)]
+    fn from(value: T) -> SafeInt {
+        SafeInt(value.into())
+    }
+}
+
 #[test]
-fn test_int() {
+fn general() {
     let a = SafeInt::from(10);
     let b = SafeInt::from(20);
-    let c = a.clone() + b;
+    let c = &a + &b;
     let d = a.clone() + c.clone();
+    let e = a.clone() + &b;
+    let f = &a + b.clone();
     assert_eq!(c, 30);
     assert!(d > a);
     assert!(a < d);
     assert!(a < b);
+    assert_eq!(e, f);
+    assert_eq!(f, a + b);
 }
