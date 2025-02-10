@@ -1,7 +1,8 @@
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 
 pub mod decimal;
 pub mod integer;
+pub mod parsing;
 
 pub use decimal::SafeDec;
 pub use integer::SafeInt;
