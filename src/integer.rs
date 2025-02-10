@@ -1,9 +1,4 @@
-use core::{
-    cmp::Ordering,
-    ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
-    str::FromStr,
-};
-use no_panic::no_panic;
+use core::{cmp::Ordering, ops::*, str::FromStr};
 use rug::{
     integer::ParseIntegerError,
     ops::{NegAssign, Pow},
@@ -200,10 +195,16 @@ impl_binary_op!(Add, add);
 impl_binary_op!(Sub, sub);
 impl_binary_op!(Mul, mul);
 impl_binary_op!(Rem, rem);
+impl_binary_op!(BitAnd, bitand);
+impl_binary_op!(BitOr, bitor);
+impl_binary_op!(BitXor, bitxor);
 impl_assign_op!(AddAssign, add_assign);
 impl_assign_op!(SubAssign, sub_assign);
 impl_assign_op!(MulAssign, mul_assign);
 impl_assign_op!(RemAssign, rem_assign);
+impl_assign_op!(BitAndAssign, bitand_assign);
+impl_assign_op!(BitOrAssign, bitor_assign);
+impl_assign_op!(BitXorAssign, bitxor_assign);
 
 impl Div for SafeInt {
     type Output = Option<SafeInt>;
