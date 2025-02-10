@@ -5,3 +5,12 @@ version = 4
 [[package]]
 name = "safe-math"
 version = "0.0.1"
+dependencies = [
+ "uintx",
+]
+
+[[package]]
+name = "uintx"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "577f4e8a5354aef747e4b33a9d2694c2065849e29be16925a2cd96c33e150f29"
