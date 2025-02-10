@@ -9,4 +9,4 @@ keywords = ["big integer", "decimal", "money", "safe", "math"]
 documentation = "https://docs.rs/safe-math"
 repository = "https://github.com/sam0x17/safe-math"
 [dependencies]
-uintx = "0"
+rug = "1"
