@@ -1,4 +1,4 @@
-use core::{cmp::Ordering, ops::*, str::FromStr};
+use core::{cmp::Ordering, fmt::Display, ops::*, str::FromStr};
 use quoth::Parsable;
 use rug::{
     ops::{NegAssign, Pow},
@@ -18,6 +18,12 @@ impl FromStr for SafeInt {
         let mut stream = quoth::ParseStream::from(s);
         let parsed = ParsedSafeInt::parse(&mut stream)?;
         Ok(parsed.value)
+    }
+}
+
+impl Display for SafeInt {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -861,6 +867,19 @@ impl Div<SafeInt> for isize {
             None
         } else {
             Some(SafeInt(self.div(other.0)))
+        }
+    }
+}
+
+impl Div<&SafeInt> for &SafeInt {
+    type Output = Option<SafeInt>;
+
+    #[inline(always)]
+    fn div(self, other: &SafeInt) -> Option<SafeInt> {
+        if other.0.is_zero() {
+            None
+        } else {
+            Some(SafeInt(self.0.clone().div(&other.0)))
         }
     }
 }
