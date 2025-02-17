@@ -718,6 +718,90 @@ macro_rules! impl_assign_op {
                 self.0.$method(other);
             }
         }
+
+        impl $trait<u8> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: u8) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<u16> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: u16) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<u32> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: u32) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<u64> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: u64) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<u128> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: u128) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<i8> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: i8) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<i16> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: i16) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<i32> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: i32) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<i64> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: i64) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<i128> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: i128) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<usize> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: usize) {
+                self.0.$method(other);
+            }
+        }
+
+        impl $trait<isize> for &mut SafeInt {
+            #[inline(always)]
+            fn $method(&mut self, other: isize) {
+                self.0.$method(other);
+            }
+        }
     };
 }
 
