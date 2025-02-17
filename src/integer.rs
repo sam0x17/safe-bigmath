@@ -400,6 +400,222 @@ macro_rules! impl_binary_op {
                 SafeInt(self.0.$method(other))
             }
         }
+
+        impl $trait<&SafeInt> for u8 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for u16 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for u32 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for u64 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for u128 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for i8 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for i16 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for i32 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for i64 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for i128 {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for usize {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<&SafeInt> for isize {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeInt) -> SafeInt {
+                SafeInt(Integer::from(self).$method(other.0.clone()))
+            }
+        }
+
+        impl $trait<u8> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: u8) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<u16> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: u16) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<u32> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: u32) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<u64> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: u64) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<u128> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: u128) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<i8> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: i8) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<i16> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: i16) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<i32> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: i32) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<i64> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: i64) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<i128> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: i128) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<usize> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: usize) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
+
+        impl $trait<isize> for &SafeInt {
+            type Output = SafeInt;
+
+            #[inline(always)]
+            fn $method(self, other: isize) -> SafeInt {
+                SafeInt(self.0.clone().$method(other))
+            }
+        }
     };
 }
 
