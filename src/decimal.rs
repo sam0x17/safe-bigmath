@@ -230,6 +230,114 @@ macro_rules! impl_binary_op {
                 SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0))
             }
         }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for u8 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for u16 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for u32 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for u64 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for u128 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for i8 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for i16 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for i32 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for i64 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for i128 {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for usize {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
+
+        impl<const D: usize> $trait<&SafeDec<D>> for isize {
+            type Output = SafeDec<D>;
+
+            #[inline(always)]
+            fn $method(self, other: &SafeDec<D>) -> SafeDec<D> {
+                SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).$method(other.0.clone()))
+            }
+        }
     };
 }
 
