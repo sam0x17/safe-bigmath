@@ -276,9 +276,9 @@ dependencies = [
 
 [[package]]
 name = "quoth"
-version = "0.1.7"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d34a2f0b562fb243cc325142baeb7174e5e3fd89b1c2981fe4f2a28358dbe8f"
+checksum = "d7e8c60e556e283c3dbc23a8fb81144e7291d1c7d726bdb649d1e1f4d7aeb27f"
 dependencies = [
  "quoth-macros",
  "regex",
@@ -288,9 +288,9 @@ dependencies = [
 
 [[package]]
 name = "quoth-macros"
-version = "0.1.7"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4650ac02d49dfd3384bbb5735251a2cd858402992df06f1eeb57cc89b4342d08"
+checksum = "02a26df53e0f99ca57580876bfb9c3cdedc5cd2d24a156f44097266d5e0eb5f1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -444,9 +444,9 @@ dependencies = [
 
 [[package]]
 name = "safe-string"
-version = "0.1.11"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5740ac587c51203119cf82aa44ca9935b057a05635c9aaf104e5a0f064bcf845"
+checksum = "828a62cafa42d2d1b5ad4592c47946c156972e1e8d6e929e566256d841177b59"
 
 [[package]]
 name = "seahash"
