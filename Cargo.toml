@@ -1,7 +1,7 @@
 [package]
 name = "safe-math"
 version = "0.0.1"
-edition = "2021"
+edition = "2024"
 authors = ["sam0x17"]
 license = "MIT"
 description = "Provides non-overflowing, non-panicking numeric types as well as safe big integer and decimal that can scale to any size safely and gracefully, only wasting memory when extra precision is needed"
