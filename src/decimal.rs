@@ -1,4 +1,4 @@
-use crate::{parsing::ParsedSafeDec, SafeInt};
+use crate::{SafeInt, parsing::ParsedSafeDec};
 use core::{fmt::Display, ops::*, str::FromStr};
 use quoth::Parsable;
 use rug::ops::NegAssign;
@@ -348,6 +348,18 @@ impl_binary_op!(Mul, mul);
 impl_binary_op!(BitAnd, bitand);
 impl_binary_op!(BitOr, bitor);
 impl_binary_op!(BitXor, bitxor);
+
+impl<const D: usize> Div for SafeDec<D> {
+    type Output = Option<SafeDec<D>>;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        if rhs.0.is_zero() {
+            None
+        } else {
+            Some(SafeDec(self.0.div(rhs.0).unwrap()))
+        }
+    }
+}
 
 impl<const D: usize> Neg for SafeDec<D> {
     type Output = SafeDec<D>;
