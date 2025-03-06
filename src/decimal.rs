@@ -396,6 +396,7 @@ impl<const D: usize> NegAssign for &mut SafeDec<D> {
 
 eval! {
     for self_type in ["SafeDec<D>","&SafeDec<D>"] {
+        // integer primitives
         for impl_type in [
             "u8",
             "u16",
@@ -424,6 +425,28 @@ eval! {
                     }
                 }
             }
+        }
+        // SafeDec types
+        for impl_type in ["SafeDec<D>", "&SafeDec<D>"] {
+            for op in ["Add", "Sub", "Mul", "BitAnd", "BitOr", "BitXor"] {
+                let method = op.to_lowercase();
+                let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
+                let impl_maybe_clone = if impl_type == "&SafeDec<D>" { ".clone()" } else { "" };
+                output! {
+                    impl<const D: usize> {{op}}<{{self_type}}> for {{impl_type}} {
+                        type Output = SafeDec<D>;
+
+                        #[inline(always)]
+                        fn {{method}}(self, other: {{self_type}}) -> SafeDec<D> {
+                            SafeDec(self{{impl_maybe_clone}}.0.{{method}}(other.0{{maybe_clone}}))
+                        }
+                    }
+                }
+            }
+        }
+        // SafeInt types
+        for impl_type in ["SafeInt", "&SafeInt"] {
+            // todo
         }
     }
 }
