@@ -414,6 +414,16 @@ eval! {
             for op in ["Add", "Sub", "Mul", "BitAnd", "BitOr", "BitXor"] {
                 let method = op.to_lowercase();
                 let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
+                let test_name = format!(
+                    "test_{}_{}_{}",
+                    op.to_lowercase(),
+                    if self_type == "&SafeDec<D>" {
+                        "safe_dec_ref"
+                    } else {
+                        "safe_dec"
+                    },
+                    impl_type.to_lowercase()
+                );
                 output! {
                     impl<const D: usize> {{op}}<{{self_type}}> for {{impl_type}} {
                         type Output = SafeDec<D>;
@@ -422,6 +432,13 @@ eval! {
                         fn {{method}}(self, other: {{self_type}}) -> SafeDec<D> {
                             SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).{{method}}(other.0{{maybe_clone}}))
                         }
+                    }
+
+                    #[test]
+                    fn {{test_name}}() {
+                        let a = SafeDec::<3>::from_raw(12);
+                        let b = {{impl_type}}::try_from(65).unwrap();
+                        let c = b.{{method}}(a);
                     }
                 }
             }
