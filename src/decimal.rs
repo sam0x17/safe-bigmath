@@ -200,6 +200,55 @@ eval! {
     }
 }
 
+eval! {
+    for self_type in ["SafeDec<D>","&SafeDec<D>"] {
+        // integer primitives
+        for impl_type in [
+            "u8",
+            "u16",
+            "u32",
+            "u64",
+            "u128",
+            "i8",
+            "i16",
+            "i32",
+            "i64",
+            "i128",
+            "usize",
+            "isize",
+        ] {
+            let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
+            let test_name = format!(
+                "test_div_{}_{}",
+                if self_type == "&SafeDec<D>" {
+                    "safe_dec_ref"
+                } else {
+                    "safe_dec"
+                },
+                impl_type.to_lowercase()
+            );
+            output! {
+                impl<const D: usize> Div<{{self_type}}> for {{impl_type}} {
+                    type Output = Option<SafeDec<D>>;
+
+                    #[inline(always)]
+                    fn div(self, other: {{self_type}}) -> Option<SafeDec<D>> {
+                        Some(SafeDec(SafeDec::<D>::scale_up(&SafeInt::from(self)).div(other.0{{maybe_clone}})?))
+                    }
+                }
+
+                #[test]
+                fn {{test_name}}() {
+                    let a = SafeDec::<3>::from_raw(12);
+                    let b = {{impl_type}}::try_from(65).unwrap();
+                    let c = b.div(a).unwrap();
+                    assert_eq!(c.0, SafeInt::from(5416));
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 extern crate alloc;
 #[cfg(test)]
