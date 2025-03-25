@@ -1,8 +1,8 @@
 use core::{cmp::Ordering, fmt::Display, ops::*, str::FromStr};
 use quoth::Parsable;
 use rug::{
-    ops::{NegAssign, Pow},
     Integer,
+    ops::{NegAssign, Pow},
 };
 
 use crate::parsing::ParsedSafeInt;
@@ -128,6 +128,12 @@ impl SafeInt {
     #[inline(always)]
     pub fn to_isize(&self) -> Option<isize> {
         self.0.to_isize()
+    }
+
+    #[inline(always)]
+    pub fn ceil_div(&self, b: SafeInt) -> Option<SafeInt> {
+        let one = SafeInt::from(1);
+        Some(((self - one.clone()) / b)? + one)
     }
 }
 

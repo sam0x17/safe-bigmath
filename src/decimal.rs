@@ -18,6 +18,14 @@ impl<const D: usize> SafeDec<D> {
     pub fn from_raw(raw: impl Into<SafeInt>) -> Self {
         SafeDec(raw.into())
     }
+
+    pub fn from_other_scale<const D2: usize>(other: SafeDec<D2>) -> Self {
+        if D2 > D {
+            SafeDec((other.0.ceil_div(SafeInt::from(10).pow((D2 - D) as u32))).unwrap())
+        } else {
+            SafeDec(other.0 * SafeInt::from(10).pow((D - D2) as u32))
+        }
+    }
 }
 
 impl<const D: usize> FromStr for SafeDec<D> {
@@ -233,4 +241,20 @@ fn test_safe_dec_mul() {
     assert_eq!(c.0, SafeInt::from(123456u64 * 654321u64));
     assert_eq!(c.to_string().as_str(), "80779853.376");
     assert_eq!(c, SafeDec::from_raw(80779853376u64));
+}
+
+#[test]
+fn test_from_other_scale() {
+    let a = "123.455".parse::<SafeDec<3>>().unwrap();
+    let b = SafeDec::<4>::from_other_scale(a);
+    assert_eq!(b.to_string().as_str(), "123.4550");
+    let a = "123.4550".parse::<SafeDec<4>>().unwrap();
+    let b = SafeDec::<3>::from_other_scale(a);
+    assert_eq!(b.to_string().as_str(), "123.455");
+    let a = "123.456789".parse::<SafeDec<6>>().unwrap();
+    let b = SafeDec::<3>::from_other_scale(a);
+    assert_eq!(b.to_string().as_str(), "123.457");
+    let a = "123.456789".parse::<SafeDec<6>>().unwrap();
+    let b = SafeDec::<10>::from_other_scale(a);
+    assert_eq!(b.to_string().as_str(), "123.4567890000");
 }
