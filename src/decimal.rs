@@ -424,6 +424,15 @@ eval! {
                     },
                     impl_type.to_lowercase()
                 );
+                let expected_answer = match op {
+                    "Add" => 65012,
+                    "Sub" => 64988,
+                    "Mul" => 780000,
+                    "BitXor" => 64996,
+                    "BitOr" => 65004,
+                    "BitAnd" => 8,
+                    _ => unreachable!(),
+                };
                 output! {
                     impl<const D: usize> {{op}}<{{self_type}}> for {{impl_type}} {
                         type Output = SafeDec<D>;
@@ -439,6 +448,7 @@ eval! {
                         let a = SafeDec::<3>::from_raw(12);
                         let b = {{impl_type}}::try_from(65).unwrap();
                         let c = b.{{method}}(a);
+                        assert_eq!(c.0, SafeInt::from({{expected_answer}}));
                     }
                 }
             }
@@ -502,4 +512,24 @@ fn test_safe_dec_add() {
     assert_eq!(c.0, SafeInt::from(123456 + 654321));
     assert_eq!(c.to_string().as_str(), "777.777");
     assert_eq!(c, SafeDec::from_raw(777777));
+}
+
+#[test]
+fn test_safe_dec_sub() {
+    let a = "123.456".parse::<SafeDec<3>>().unwrap();
+    let b = "654.321".parse::<SafeDec<3>>().unwrap();
+    let c = a - b;
+    assert_eq!(c.0, SafeInt::from(123456 - 654321));
+    assert_eq!(c.to_string().as_str(), "-530.865");
+    assert_eq!(c, SafeDec::from_raw(-530865));
+}
+
+#[test]
+fn test_safe_dec_mul() {
+    let a = "123.456".parse::<SafeDec<3>>().unwrap();
+    let b = "654.321".parse::<SafeDec<3>>().unwrap();
+    let c = a * b;
+    assert_eq!(c.0, SafeInt::from(123456u64 * 654321u64));
+    assert_eq!(c.to_string().as_str(), "80779853.376");
+    assert_eq!(c, SafeDec::from_raw(80779853376u64));
 }
