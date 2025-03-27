@@ -316,7 +316,9 @@ impl<const D: usize> Div<SafeDec<D>> for SafeDec<D> {
 
     #[inline(always)]
     fn div(self, other: SafeDec<D>) -> Option<SafeDec<D>> {
-        Some(SafeDec(self.0.clone().div(other.0.clone())?))
+        Some(SafeDec(
+            SafeDec::<D>::scale_up(&self.0).div(other.0.clone())?,
+        ))
     }
 }
 
@@ -325,7 +327,9 @@ impl<const D: usize> Div<&SafeDec<D>> for SafeDec<D> {
 
     #[inline(always)]
     fn div(self, other: &SafeDec<D>) -> Option<SafeDec<D>> {
-        Some(SafeDec(self.0.clone().div(other.0.clone())?))
+        Some(SafeDec(
+            SafeDec::<D>::scale_up(&self.0).div(other.0.clone())?,
+        ))
     }
 }
 
@@ -334,7 +338,9 @@ impl<const D: usize> Div<SafeDec<D>> for &SafeDec<D> {
 
     #[inline(always)]
     fn div(self, other: SafeDec<D>) -> Option<SafeDec<D>> {
-        Some(SafeDec(self.0.clone().div(other.0.clone())?))
+        Some(SafeDec(
+            SafeDec::<D>::scale_up(&self.0).div(other.0.clone())?,
+        ))
     }
 }
 
@@ -343,7 +349,9 @@ impl<const D: usize> Div<&SafeDec<D>> for &SafeDec<D> {
 
     #[inline(always)]
     fn div(self, other: &SafeDec<D>) -> Option<SafeDec<D>> {
-        Some(SafeDec(self.0.clone().div(other.0.clone())?))
+        Some(SafeDec(
+            SafeDec::<D>::scale_up(&self.0).div(other.0.clone())?,
+        ))
     }
 }
 
@@ -467,7 +475,7 @@ fn test_safe_dec_div() {
     let a = "123.456".parse::<SafeDec<3>>().unwrap();
     let b = "654.321".parse::<SafeDec<3>>().unwrap();
     let c = b / a;
-    assert_eq!(c.unwrap().0, SafeInt::from(654321 / 123456));
+    assert_eq!(c.unwrap().to_string().as_str(), "5.300");
 }
 
 #[test]
@@ -499,5 +507,15 @@ fn test_complex() {
     let a = "-348973984.9879837849".parse::<SafeDec<10>>().unwrap();
     let b = "195.0000000001".parse::<SafeDec<10>>().unwrap();
     let c = b / a;
-    assert_eq!(c.unwrap(), "-0.0000055878".parse::<SafeDec<10>>().unwrap());
+    assert_eq!(
+        "-0.000005587"
+            .parse::<SafeDec<10>>()
+            .unwrap()
+            .to_string()
+            .as_str()
+            .parse::<SafeDec<10>>()
+            .unwrap(),
+        "-0.000005587".parse::<SafeDec<10>>().unwrap()
+    );
+    assert_eq!(c.unwrap(), "-0.000005587".parse::<SafeDec<10>>().unwrap());
 }
