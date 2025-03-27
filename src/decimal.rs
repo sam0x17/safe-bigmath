@@ -347,6 +347,78 @@ impl<const D: usize> Div<&SafeDec<D>> for &SafeDec<D> {
     }
 }
 
+impl<const D: usize> Div<SafeInt> for SafeDec<D> {
+    type Output = Option<SafeDec<D>>;
+
+    #[inline(always)]
+    fn div(self, other: SafeInt) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.0.div(other)?))
+    }
+}
+
+impl<const D: usize> Div<&SafeInt> for SafeDec<D> {
+    type Output = Option<SafeDec<D>>;
+
+    #[inline(always)]
+    fn div(self, other: &SafeInt) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.0.div(other.clone())?))
+    }
+}
+
+impl<const D: usize> Div<SafeInt> for &SafeDec<D> {
+    type Output = Option<SafeDec<D>>;
+
+    #[inline(always)]
+    fn div(self, other: SafeInt) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.0.clone().div(other)?))
+    }
+}
+
+impl<const D: usize> Div<&SafeInt> for &SafeDec<D> {
+    type Output = Option<SafeDec<D>>;
+
+    #[inline(always)]
+    fn div(self, other: &SafeInt) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.0.clone().div(other.clone())?))
+    }
+}
+
+impl<const D: usize> Div<SafeDec<D>> for SafeInt {
+    type Output = Option<SafeDec<D>>;
+
+    #[inline(always)]
+    fn div(self, other: SafeDec<D>) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.div(other.0)?))
+    }
+}
+
+impl<const D: usize> Div<&SafeDec<D>> for SafeInt {
+    type Output = Option<SafeDec<D>>;
+
+    #[inline(always)]
+    fn div(self, other: &SafeDec<D>) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.div(other.0.clone())?))
+    }
+}
+
+impl<const D: usize> Div<SafeDec<D>> for &SafeInt {
+    type Output = Option<SafeDec<D>>;
+
+    #[inline(always)]
+    fn div(self, other: SafeDec<D>) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.clone().div(other.0)?))
+    }
+}
+
+impl<const D: usize> Div<&SafeDec<D>> for &SafeInt {
+    type Output = Option<SafeDec<D>>;
+
+    #[inline(always)]
+    fn div(self, other: &SafeDec<D>) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.clone().div(other.0.clone())?))
+    }
+}
+
 #[cfg(test)]
 extern crate alloc;
 #[cfg(test)]
@@ -396,6 +468,14 @@ fn test_safe_dec_div() {
     let b = "654.321".parse::<SafeDec<3>>().unwrap();
     let c = b / a;
     assert_eq!(c, Some(SafeInt::from(654321 / 123456)));
+}
+
+#[test]
+fn test_safe_dec_safe_int_div() {
+    let a = "123.456".parse::<SafeDec<3>>().unwrap();
+    let b = SafeInt::from(654321);
+    let c = b / a;
+    assert_eq!(c, Some(SafeDec::from_raw(654321 / 123456)));
 }
 
 #[test]
