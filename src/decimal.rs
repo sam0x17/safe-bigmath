@@ -312,38 +312,38 @@ eval! {
 }
 
 impl<const D: usize> Div<SafeDec<D>> for SafeDec<D> {
-    type Output = Option<SafeInt>;
+    type Output = Option<SafeDec<D>>;
 
     #[inline(always)]
-    fn div(self, other: SafeDec<D>) -> Option<SafeInt> {
-        self.0.div(other.0)
+    fn div(self, other: SafeDec<D>) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.0.clone().div(other.0.clone())?))
     }
 }
 
 impl<const D: usize> Div<&SafeDec<D>> for SafeDec<D> {
-    type Output = Option<SafeInt>;
+    type Output = Option<SafeDec<D>>;
 
     #[inline(always)]
-    fn div(self, other: &SafeDec<D>) -> Option<SafeInt> {
-        self.0.div(other.0.clone())
+    fn div(self, other: &SafeDec<D>) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.0.clone().div(other.0.clone())?))
     }
 }
 
 impl<const D: usize> Div<SafeDec<D>> for &SafeDec<D> {
-    type Output = Option<SafeInt>;
+    type Output = Option<SafeDec<D>>;
 
     #[inline(always)]
-    fn div(self, other: SafeDec<D>) -> Option<SafeInt> {
-        self.0.clone().div(other.0)
+    fn div(self, other: SafeDec<D>) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.0.clone().div(other.0.clone())?))
     }
 }
 
 impl<const D: usize> Div<&SafeDec<D>> for &SafeDec<D> {
-    type Output = Option<SafeInt>;
+    type Output = Option<SafeDec<D>>;
 
     #[inline(always)]
-    fn div(self, other: &SafeDec<D>) -> Option<SafeInt> {
-        self.0.clone().div(other.0.clone())
+    fn div(self, other: &SafeDec<D>) -> Option<SafeDec<D>> {
+        Some(SafeDec(self.0.clone().div(other.0.clone())?))
     }
 }
 
@@ -467,7 +467,7 @@ fn test_safe_dec_div() {
     let a = "123.456".parse::<SafeDec<3>>().unwrap();
     let b = "654.321".parse::<SafeDec<3>>().unwrap();
     let c = b / a;
-    assert_eq!(c, Some(SafeInt::from(654321 / 123456)));
+    assert_eq!(c.unwrap().0, SafeInt::from(654321 / 123456));
 }
 
 #[test]
@@ -492,4 +492,12 @@ fn test_from_other_scale() {
     let a = "123.456789".parse::<SafeDec<6>>().unwrap();
     let b = SafeDec::<10>::from_other_scale(a);
     assert_eq!(b.to_string().as_str(), "123.4567890000");
+}
+
+#[test]
+fn test_complex() {
+    let a = "-348973984.9879837849".parse::<SafeDec<10>>().unwrap();
+    let b = "195.0000000001".parse::<SafeDec<10>>().unwrap();
+    let c = b / a;
+    assert_eq!(c.unwrap(), "-0.0000055878".parse::<SafeDec<10>>().unwrap());
 }
