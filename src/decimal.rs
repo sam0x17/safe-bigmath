@@ -311,6 +311,42 @@ eval! {
     }
 }
 
+impl<const D: usize> Div<SafeDec<D>> for SafeDec<D> {
+    type Output = Option<SafeInt>;
+
+    #[inline(always)]
+    fn div(self, other: SafeDec<D>) -> Option<SafeInt> {
+        self.0.div(other.0)
+    }
+}
+
+impl<const D: usize> Div<&SafeDec<D>> for SafeDec<D> {
+    type Output = Option<SafeInt>;
+
+    #[inline(always)]
+    fn div(self, other: &SafeDec<D>) -> Option<SafeInt> {
+        self.0.div(other.0.clone())
+    }
+}
+
+impl<const D: usize> Div<SafeDec<D>> for &SafeDec<D> {
+    type Output = Option<SafeInt>;
+
+    #[inline(always)]
+    fn div(self, other: SafeDec<D>) -> Option<SafeInt> {
+        self.0.clone().div(other.0)
+    }
+}
+
+impl<const D: usize> Div<&SafeDec<D>> for &SafeDec<D> {
+    type Output = Option<SafeInt>;
+
+    #[inline(always)]
+    fn div(self, other: &SafeDec<D>) -> Option<SafeInt> {
+        self.0.clone().div(other.0.clone())
+    }
+}
+
 #[cfg(test)]
 extern crate alloc;
 #[cfg(test)]
@@ -352,6 +388,14 @@ fn test_safe_dec_mul() {
     assert_eq!(c.0, SafeInt::from(123456u64 * 654321u64));
     assert_eq!(c.to_string().as_str(), "80779853.376");
     assert_eq!(c, SafeDec::from_raw(80779853376u64));
+}
+
+#[test]
+fn test_safe_dec_div() {
+    let a = "123.456".parse::<SafeDec<3>>().unwrap();
+    let b = "654.321".parse::<SafeDec<3>>().unwrap();
+    let c = b / a;
+    assert_eq!(c, Some(SafeInt::from(654321 / 123456)));
 }
 
 #[test]
