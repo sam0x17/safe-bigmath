@@ -1567,6 +1567,10 @@ impl<const N: usize> ConstSafeInt<N> {
     pub const fn as_bytes(&self) -> &[u8; N] {
         &self.0
     }
+
+    pub fn to_val(self) -> SafeInt {
+        self.into()
+    }
 }
 
 impl ConstSafeInt<17> {
@@ -1599,6 +1603,18 @@ impl ConstSafeInt<17> {
 impl<const N: usize> From<ConstSafeInt<N>> for SafeInt {
     #[inline(always)]
     fn from(value: ConstSafeInt<N>) -> SafeInt {
+        let pos = value.0.get(0).cloned().unwrap_or(0) == 0;
+        let mut res = SafeInt(Integer::from_digits(&value.0[1..], Order::MsfBe));
+        if !pos {
+            res *= -1;
+        }
+        res
+    }
+}
+
+impl<const N: usize> From<&ConstSafeInt<N>> for SafeInt {
+    #[inline(always)]
+    fn from(value: &ConstSafeInt<N>) -> SafeInt {
         let pos = value.0.get(0).cloned().unwrap_or(0) == 0;
         let mut res = SafeInt(Integer::from_digits(&value.0[1..], Order::MsfBe));
         if !pos {
