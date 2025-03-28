@@ -1,7 +1,8 @@
-use core::{cmp::Ordering, fmt::Display, ops::*, str::FromStr};
+use core::{cmp::Ordering, fmt::Display, i128, ops::*, str::FromStr, u128};
 use quoth::Parsable;
 use rug::{
     Integer,
+    integer::Order,
     ops::{NegAssign, Pow},
 };
 
@@ -32,6 +33,8 @@ pub static NEG_ONE: SafeInt = SafeInt(unsafe { Integer::from_raw(*Integer::NEG_O
 
 impl SafeInt {
     pub const ZERO: SafeInt = SafeInt(Integer::ZERO);
+    pub const ONE: ConstSafeInt<2> = ConstSafeInt::from_bytes([0, 1]);
+    pub const NEG_ONE: ConstSafeInt<2> = ConstSafeInt::from_bytes([1, 1]);
 
     #[inline(always)]
     pub const fn raw(&self) -> &Integer {
@@ -1550,6 +1553,99 @@ impl<T: Into<Integer>> From<T> for SafeInt {
     fn from(value: T) -> SafeInt {
         SafeInt(value.into())
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[repr(C)]
+pub struct ConstSafeInt<const N: usize>([u8; N]);
+
+impl<const N: usize> ConstSafeInt<N> {
+    pub const fn from_bytes(value: [u8; N]) -> Self {
+        Self(value)
+    }
+
+    pub const fn as_bytes(&self) -> &[u8; N] {
+        &self.0
+    }
+}
+
+impl ConstSafeInt<17> {
+    pub const fn from_i128(value: i128) -> Self {
+        let is_neg = value < 0;
+        let value = if value == i128::MIN {
+            i128::MAX as u128 + 1
+        } else {
+            value.abs() as u128
+        };
+        let mut res = Self::from_u128(value);
+        if is_neg {
+            res.0[0] = 1;
+        }
+        res
+    }
+    pub const fn from_u128(value: u128) -> Self {
+        let mut res = [0; 17];
+        let mut value = value;
+        let mut i = 17;
+        while i > 0 {
+            i -= 1;
+            res[i] = (value & 0xff) as u8;
+            value >>= 8;
+        }
+        Self(res)
+    }
+}
+
+impl<const N: usize> From<ConstSafeInt<N>> for SafeInt {
+    #[inline(always)]
+    fn from(value: ConstSafeInt<N>) -> SafeInt {
+        let pos = value.0.get(0).cloned().unwrap_or(0) == 0;
+        let mut res = SafeInt(Integer::from_digits(&value.0[1..], Order::MsfBe));
+        if !pos {
+            res *= -1;
+        }
+        res
+    }
+}
+
+#[test]
+fn test_const_safe_int() {
+    assert_eq!(
+        SafeInt::from(ConstSafeInt::<4>::from_bytes([0, 0, 0, 1])),
+        1
+    );
+    assert_eq!(SafeInt::from(ConstSafeInt::<2>::from_bytes([0, 1])), 1);
+    assert_eq!(SafeInt::from(ConstSafeInt::<2>::from_bytes([1, 1])), -1);
+    assert_eq!(SafeInt::from(ConstSafeInt::<2>::from_bytes([1, 0])), -0);
+    assert_eq!(
+        SafeInt::from(ConstSafeInt::<3>::from_bytes([1, 5, 254])),
+        -1534
+    );
+    assert_eq!(
+        SafeInt::from(ConstSafeInt::<17>::from_i128(-538525)),
+        -538525
+    );
+    assert_eq!(
+        SafeInt::from(ConstSafeInt::<17>::from_i128(123456789)),
+        123456789
+    );
+    assert_eq!(
+        SafeInt::from(ConstSafeInt::<17>::from_i128(i128::MIN)),
+        i128::MIN
+    );
+    assert_eq!(
+        SafeInt::from(ConstSafeInt::<17>::from_i128(i128::MAX)),
+        i128::MAX
+    );
+    assert_eq!(
+        SafeInt::from(ConstSafeInt::<17>::from_u128(u128::MAX)),
+        u128::MAX
+    );
+    assert_eq!(
+        SafeInt::from(ConstSafeInt::<17>::from_u128(39874398749837343434343434344)),
+        39874398749837343434343434344u128
+    );
+    assert_eq!(SafeInt::from(ConstSafeInt::<17>::from_u128(0)), 0);
 }
 
 #[test]
