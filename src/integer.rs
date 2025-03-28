@@ -27,6 +27,9 @@ impl Display for SafeInt {
     }
 }
 
+pub static ONE: SafeInt = SafeInt(unsafe { Integer::from_raw(*Integer::ONE.as_raw()) });
+pub static NEG_ONE: SafeInt = SafeInt(unsafe { Integer::from_raw(*Integer::NEG_ONE.as_raw()) });
+
 impl SafeInt {
     pub const ZERO: SafeInt = SafeInt(Integer::ZERO);
 
@@ -1589,4 +1592,19 @@ fn general() {
     assert_eq!(SafeInt::from(5) / 0, None);
     assert_eq!(&SafeInt::from(789) / 893797983, Some(SafeInt::from(0)));
     assert_eq!(&SafeInt::from(28249) / SafeInt::ZERO, None);
+}
+
+#[test]
+fn test_zero() {
+    assert_eq!(SafeInt::ZERO, 0);
+    assert_eq!(SafeInt::ZERO.0, Integer::ZERO);
+    assert!(SafeInt::ZERO.is_zero());
+}
+
+#[test]
+fn test_one() {
+    assert_eq!(ONE, 1);
+    assert_eq!(ONE.0, *Integer::ONE);
+    let one = ONE.clone();
+    assert_eq!(one, 1);
 }
