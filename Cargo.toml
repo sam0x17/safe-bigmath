@@ -9,6 +9,8 @@ keywords = ["biginteger", "decimal", "money", "safe", "math"]
 documentation = "https://docs.rs/safe-math"
 repository = "https://github.com/sam0x17/safe-math"
 [dependencies]
-quoth = "0"
-rug = "1"
-eval-macro = "0"
+quoth = "0.2"
+eval-macro = "0.5"
+num-bigint = { version = "0.4", default-features = false }
+num-traits = { version = "0.2", default-features = false }
+num-integer = { version = "0.1", default-features = false }

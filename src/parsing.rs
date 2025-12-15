@@ -2,11 +2,11 @@ use quoth::{
     Parsable, ParsableExt, ParseStream, Span, Spanned,
     parsable::{Exact, Nothing},
 };
-use rug::ops::NegAssign;
 
 use crate::SafeInt;
 
 extern crate alloc;
+
 use alloc::vec::Vec;
 
 /// Parsed representation of a fixed-scale decimal literal.
@@ -69,7 +69,7 @@ impl<const D: usize> Parsable for ParsedSafeDec<D> {
             raw += d;
         }
         if is_neg {
-            raw.neg_assign();
+            raw = -raw;
         }
         stream.parse::<Nothing>()?;
         Ok(ParsedSafeDec {
@@ -117,7 +117,7 @@ impl Parsable for ParsedSafeInt {
             raw += d;
         }
         if is_neg {
-            raw.neg_assign();
+            raw = -raw;
         }
         stream.parse::<Nothing>()?;
         Ok(ParsedSafeInt {
@@ -198,7 +198,7 @@ fn test_parse_safe_int_valid_positive() {
         .value
         .raw(),
         "112233445566778829879879823749798798982893947293749823798729387293849234"
-            .parse::<rug::Integer>()
+            .parse::<num_bigint::BigInt>()
             .unwrap()
     );
     assert_eq!(

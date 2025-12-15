@@ -1,8 +1,11 @@
+extern crate alloc;
+
+#[cfg(test)]
+use alloc::string::ToString;
 use crate::{SafeInt, parsing::ParsedSafeDec};
 use core::{fmt::Display, ops::*, str::FromStr};
 use eval_macro::eval;
 use quoth::Parsable;
-use rug::ops::NegAssign;
 
 /// Fixed-point decimal built on top of `SafeInt` with `D` fractional digits.
 ///
@@ -22,7 +25,9 @@ pub struct SafeDec<const D: usize>(SafeInt);
 
 impl<const D: usize> SafeDec<D> {
     /// Zero value at the given scale.
-    pub const ZERO: SafeDec<D> = SafeDec::<D>(SafeInt::ZERO);
+    pub fn zero() -> SafeDec<D> {
+        SafeDec::<D>(SafeInt::zero())
+    }
 
     fn scale_up(other: &SafeInt) -> SafeInt {
         other * SafeInt::from(10).pow(D as u32)
@@ -82,7 +87,7 @@ impl<const D: usize> Display for SafeDec<D> {
         let abs_value = self.0.clone().abs();
 
         // These divisions are safe since divisor is never zero
-        let integer_part = (&abs_value / &divisor).unwrap_or(SafeInt::ZERO);
+        let integer_part = (&abs_value / &divisor).unwrap_or(SafeInt::zero());
         let mut decimal_part = &abs_value % &divisor;
 
         if self.0.is_negative() {
@@ -120,20 +125,6 @@ impl<const D: usize> Neg for &SafeDec<D> {
     #[inline(always)]
     fn neg(self) -> SafeDec<D> {
         SafeDec(-self.0.clone())
-    }
-}
-
-impl<const D: usize> NegAssign for SafeDec<D> {
-    #[inline(always)]
-    fn neg_assign(&mut self) {
-        self.0 = -self.0.clone();
-    }
-}
-
-impl<const D: usize> NegAssign for &mut SafeDec<D> {
-    #[inline(always)]
-    fn neg_assign(&mut self) {
-        self.0 = -self.0.clone();
     }
 }
 
@@ -567,11 +558,6 @@ where
         *self = self.clone() - rhs;
     }
 }
-
-#[cfg(test)]
-extern crate alloc;
-#[cfg(test)]
-use alloc::string::ToString;
 
 #[test]
 fn test_safe_dec_from_str() {

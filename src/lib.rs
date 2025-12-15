@@ -1,7 +1,11 @@
 #![no_std]
 #![deny(missing_docs)]
+//! Safe, non-panicking numeric primitives built on top of pure-Rust `num-bigint` (alloc-only).
 
-//! Safe, non-panicking numeric primitives built on top of `rug`.
+extern crate alloc;
+
+#[cfg(test)]
+extern crate std;
 
 /// Fixed-precision decimal support built on `SafeInt`.
 pub mod decimal;
