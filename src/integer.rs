@@ -12,7 +12,7 @@ use alloc::format;
 use crate::parsing::ParsedSafeInt;
 
 /// Arbitrary-precision integer wrapper that exposes safe, non-panicking operations.
-/// 
+///
 /// # Examples
 /// Create values from primitives and perform safe division (returns `Option` to avoid panics):
 /// ```
@@ -417,13 +417,55 @@ macro_rules! impl_prim_ops {
     };
 }
 
-impl_prim_ops!(Add, add, [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]);
-impl_prim_ops!(Sub, sub, [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]);
-impl_prim_ops!(Mul, mul, [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]);
-impl_prim_ops!(Rem, rem, [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]);
-impl_prim_ops!(BitAnd, bitand, [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]);
-impl_prim_ops!(BitOr, bitor, [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]);
-impl_prim_ops!(BitXor, bitxor, [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]);
+impl_prim_ops!(
+    Add,
+    add,
+    [
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+    ]
+);
+impl_prim_ops!(
+    Sub,
+    sub,
+    [
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+    ]
+);
+impl_prim_ops!(
+    Mul,
+    mul,
+    [
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+    ]
+);
+impl_prim_ops!(
+    Rem,
+    rem,
+    [
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+    ]
+);
+impl_prim_ops!(
+    BitAnd,
+    bitand,
+    [
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+    ]
+);
+impl_prim_ops!(
+    BitOr,
+    bitor,
+    [
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+    ]
+);
+impl_prim_ops!(
+    BitXor,
+    bitxor,
+    [
+        u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+    ]
+);
 
 impl AddAssign<SafeInt> for SafeInt {
     #[inline(always)]
@@ -660,8 +702,12 @@ macro_rules! impl_div_prim_lhs_safeint {
     };
 }
 
-impl_div_safeint_rhs_prim!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
-impl_div_prim_lhs_safeint!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+impl_div_safeint_rhs_prim!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
+impl_div_prim_lhs_safeint!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
 
 impl<T: Into<BigInt>> From<T> for SafeInt {
     #[inline(always)]
@@ -712,7 +758,9 @@ macro_rules! impl_prim_cmp {
     };
 }
 
-impl_prim_cmp!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+impl_prim_cmp!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
 
 /// Fixed-size, byte-backed integer that can be converted into `SafeInt`.
 ///
@@ -868,10 +916,7 @@ fn general() {
     assert_ne!(SafeInt::from(10), SafeInt::from(20));
     assert!(SafeInt::from(37984739847983497938479797988798789783u128).is_odd());
     assert!(
-        SafeInt::from_str(
-            "3798473984798349793847979798879878978334738744739847983749837"
-        )
-        .unwrap()
+        SafeInt::from_str("3798473984798349793847979798879878978334738744739847983749837").unwrap()
             > 10
     );
     assert_eq!(
@@ -911,7 +956,10 @@ fn test_perquintill_power() {
     )
     .expect("perquintill integer result");
 
-    assert_eq!(perquintill_result, SafeInt::from(649_519_052_838_328_985u128));
+    assert_eq!(
+        perquintill_result,
+        SafeInt::from(649_519_052_838_328_985u128)
+    );
     let readable = crate::SafeDec::<18>::from_raw(perquintill_result);
     assert_eq!(format!("{}", readable), "0.649519052838328985");
 }

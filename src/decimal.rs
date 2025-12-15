@@ -1,8 +1,8 @@
 extern crate alloc;
 
+use crate::{SafeInt, parsing::ParsedSafeDec};
 #[cfg(test)]
 use alloc::string::ToString;
-use crate::{SafeInt, parsing::ParsedSafeDec};
 use core::{fmt::Display, ops::*, str::FromStr};
 use eval_macro::eval;
 use quoth::Parsable;
@@ -51,16 +51,16 @@ impl<const D: usize> SafeDec<D> {
         SafeDec(raw.into())
     }
 
-/// Converts between decimal scales, preserving magnitude.
-///
-/// # Examples
-/// ```
-/// use safe_math::SafeDec;
-///
-/// let a: SafeDec<4> = "1.2345".parse().unwrap();
-/// let b = SafeDec::<2>::from_other_scale(a);
-/// assert_eq!(b.to_string(), "1.24");
-/// ```
+    /// Converts between decimal scales, preserving magnitude.
+    ///
+    /// # Examples
+    /// ```
+    /// use safe_math::SafeDec;
+    ///
+    /// let a: SafeDec<4> = "1.2345".parse().unwrap();
+    /// let b = SafeDec::<2>::from_other_scale(a);
+    /// assert_eq!(b.to_string(), "1.24");
+    /// ```
     pub fn from_other_scale<const D2: usize>(other: SafeDec<D2>) -> Self {
         if D2 > D {
             SafeDec((other.0.ceil_div(SafeInt::from(10).pow((D2 - D) as u32))).unwrap())
