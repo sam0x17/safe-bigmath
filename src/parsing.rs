@@ -9,10 +9,16 @@ use crate::SafeInt;
 extern crate alloc;
 use alloc::vec::Vec;
 
+/// Parsed representation of a fixed-scale decimal literal.
+///
+/// Useful for inspecting the raw scaled value and source span after parsing.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, ParsableExt)]
 pub struct ParsedSafeDec<const D: usize> {
+    /// The scaled integer backing the parsed decimal.
     pub raw: SafeInt,
+    /// Number of decimal places parsed (should equal `D` when valid).
     pub decimals: usize,
+    /// Source span of the parsed literal.
     pub span: Span,
 }
 
@@ -74,9 +80,14 @@ impl<const D: usize> Parsable for ParsedSafeDec<D> {
     }
 }
 
+/// Parsed representation of an integer literal.
+///
+/// Useful for inspecting the parsed value and source span.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, ParsableExt)]
 pub struct ParsedSafeInt {
+    /// Parsed integer value.
     pub value: SafeInt,
+    /// Source span of the parsed literal.
     pub span: Span,
 }
 

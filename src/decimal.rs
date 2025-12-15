@@ -4,11 +4,24 @@ use eval_macro::eval;
 use quoth::Parsable;
 use rug::ops::NegAssign;
 
+/// Fixed-point decimal built on top of `SafeInt` with `D` fractional digits.
+///
+/// # Examples
+/// ```
+/// use safe_math::SafeDec;
+///
+/// // 3 decimal places
+/// let a: SafeDec<3> = "1.500".parse().unwrap();
+/// let b: SafeDec<3> = "2.250".parse().unwrap();
+/// let c = a + b;
+/// assert_eq!(c.to_string(), "3.750");
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct SafeDec<const D: usize>(SafeInt);
 
 impl<const D: usize> SafeDec<D> {
+    /// Zero value at the given scale.
     pub const ZERO: SafeDec<D> = SafeDec::<D>(SafeInt::ZERO);
 
     fn scale_up(other: &SafeInt) -> SafeInt {
@@ -19,10 +32,30 @@ impl<const D: usize> SafeDec<D> {
         (other / SafeInt::from(10).pow(D as u32)).unwrap_or(0.into())
     }
 
+    /// Creates a `SafeDec` from an already scaled integer.
+    ///
+    /// # Examples
+    /// ```
+    /// use safe_math::SafeDec;
+    ///
+    /// let raw = 123_456; // represents 123.456 at 3 decimal places
+    /// let dec = SafeDec::<3>::from_raw(raw);
+    /// assert_eq!(dec.to_string(), "123.456");
+    /// ```
     pub fn from_raw(raw: impl Into<SafeInt>) -> Self {
         SafeDec(raw.into())
     }
 
+/// Converts between decimal scales, preserving magnitude.
+///
+/// # Examples
+/// ```
+/// use safe_math::SafeDec;
+///
+/// let a: SafeDec<4> = "1.2345".parse().unwrap();
+/// let b = SafeDec::<2>::from_other_scale(a);
+/// assert_eq!(b.to_string(), "1.24");
+/// ```
     pub fn from_other_scale<const D2: usize>(other: SafeDec<D2>) -> Self {
         if D2 > D {
             SafeDec((other.0.ceil_div(SafeInt::from(10).pow((D2 - D) as u32))).unwrap())

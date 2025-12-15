@@ -14,6 +14,19 @@ use alloc::format;
 
 use crate::parsing::ParsedSafeInt;
 
+/// Arbitrary-precision integer wrapper that exposes safe, non-panicking operations.
+///
+/// # Examples
+/// Create values from primitives and perform safe division (returns `Option` to avoid panics):
+/// ```
+/// use safe_math::SafeInt;
+///
+/// let a = SafeInt::from(10);
+/// let b = SafeInt::from(3);
+/// assert_eq!((&a / &b).unwrap(), SafeInt::from(3));
+/// assert_eq!(&a + &b, SafeInt::from(13));
+/// assert_eq!(SafeInt::from(5) / SafeInt::from(0), None);
+/// ```
 #[derive(Clone, Debug, Eq, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct SafeInt(Integer);
@@ -34,120 +47,147 @@ impl Display for SafeInt {
     }
 }
 
+/// Static instance of `1` for convenient reuse.
 pub static ONE: SafeInt = SafeInt(unsafe { Integer::from_raw(*Integer::ONE.as_raw()) });
+/// Static instance of `-1` for convenient reuse.
 pub static NEG_ONE: SafeInt = SafeInt(unsafe { Integer::from_raw(*Integer::NEG_ONE.as_raw()) });
 
 impl SafeInt {
+    /// Constant zero value.
     pub const ZERO: SafeInt = SafeInt(Integer::ZERO);
+    /// Constant one value as a compile-time byte representation.
     pub const ONE: ConstSafeInt<2> = ConstSafeInt::from_bytes([0, 1]);
+    /// Constant negative one value as a compile-time byte representation.
     pub const NEG_ONE: ConstSafeInt<2> = ConstSafeInt::from_bytes([1, 1]);
 
+    /// Returns the underlying `rug::Integer` reference.
     #[inline(always)]
     pub const fn raw(&self) -> &Integer {
         &self.0
     }
 
+    /// Constructs a `SafeInt` from a raw `rug::Integer`.
     #[inline(always)]
     pub const fn from_raw(value: Integer) -> SafeInt {
         SafeInt(value)
     }
 
+    /// Returns `true` if the value is negative.
     #[inline(always)]
     pub const fn is_negative(&self) -> bool {
         self.0.is_negative()
     }
 
+    /// Returns `true` if the value is evenly divisible by 2.
     #[inline(always)]
     pub const fn is_even(&self) -> bool {
         self.0.is_even()
     }
 
+    /// Returns `true` if the value is not evenly divisible by 2.
     #[inline(always)]
     pub const fn is_odd(&self) -> bool {
         self.0.is_odd()
     }
 
+    /// Returns `true` if the value is exactly zero.
     #[inline(always)]
     pub const fn is_zero(&self) -> bool {
         self.0.is_zero()
     }
 
+    /// Returns the absolute value.
     #[inline(always)]
     pub fn abs(self) -> SafeInt {
         SafeInt(self.0.abs())
     }
 
+    /// Raises the number to an unsigned integer power.
     #[inline(always)]
     pub fn pow(self, exp: u32) -> SafeInt {
         SafeInt(self.0.pow(exp))
     }
 
+    /// Computes quotient and remainder simultaneously.
     #[inline(always)]
     pub fn div_rem(self, other: SafeInt) -> (SafeInt, SafeInt) {
         let (div, rem) = self.0.div_rem(other.0);
         (SafeInt(div), SafeInt(rem))
     }
 
+    /// Converts to `u8` if the value fits.
     #[inline(always)]
     pub fn to_u8(&self) -> Option<u8> {
         self.0.to_u8()
     }
 
+    /// Converts to `u16` if the value fits.
     #[inline(always)]
     pub fn to_u16(&self) -> Option<u16> {
         self.0.to_u16()
     }
 
+    /// Converts to `u32` if the value fits.
     #[inline(always)]
     pub fn to_u32(&self) -> Option<u32> {
         self.0.to_u32()
     }
 
+    /// Converts to `u64` if the value fits.
     #[inline(always)]
     pub fn to_u64(&self) -> Option<u64> {
         self.0.to_u64()
     }
 
+    /// Converts to `u128` if the value fits.
     #[inline(always)]
     pub fn to_u128(&self) -> Option<u128> {
         self.0.to_u128()
     }
 
+    /// Converts to `i8` if the value fits.
     #[inline(always)]
     pub fn to_i8(&self) -> Option<i8> {
         self.0.to_i8()
     }
 
+    /// Converts to `i16` if the value fits.
     #[inline(always)]
     pub fn to_i16(&self) -> Option<i16> {
         self.0.to_i16()
     }
 
+    /// Converts to `i32` if the value fits.
     #[inline(always)]
     pub fn to_i32(&self) -> Option<i32> {
         self.0.to_i32()
     }
 
+    /// Converts to `i64` if the value fits.
     #[inline(always)]
     pub fn to_i64(&self) -> Option<i64> {
         self.0.to_i64()
     }
 
+    /// Converts to `i128` if the value fits.
     #[inline(always)]
     pub fn to_i128(&self) -> Option<i128> {
         self.0.to_i128()
     }
 
+    /// Converts to `usize` if the value fits.
     #[inline(always)]
     pub fn to_usize(&self) -> Option<usize> {
         self.0.to_usize()
     }
 
+    /// Converts to `isize` if the value fits.
     #[inline(always)]
     pub fn to_isize(&self) -> Option<isize> {
         self.0.to_isize()
     }
 
+    /// Performs integer ceiling division (`self / b`, rounded up).
     #[inline(always)]
     pub fn ceil_div(&self, b: SafeInt) -> Option<SafeInt> {
         let one = SafeInt::from(1);
@@ -157,6 +197,23 @@ impl SafeInt {
     /// Computes `(base_numerator / base_denominator)^(exponent_numerator / exponent_denominator)`
     /// scaled by the provided factor. Returns `None` if the base or exponent denominator is zero
     /// or if the base is non-positive.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use safe_math::SafeInt;
+    ///
+    /// // (2 / 3) ^ (1 / 2) * 1000 (approx) => 816 when floored
+    /// let result = SafeInt::pow_ratio_scaled(
+    ///     &SafeInt::from(2),
+    ///     &SafeInt::from(3),
+    ///     &SafeInt::from(1),
+    ///     &SafeInt::from(2),
+    ///     128,
+    ///     &SafeInt::from(1_000),
+    /// )
+    /// .unwrap();
+    /// assert_eq!(result, SafeInt::from(816));
+    /// ```
     pub fn pow_ratio_scaled(
         base_numerator: &SafeInt,
         base_denominator: &SafeInt,
@@ -1594,25 +1651,48 @@ impl<T: Into<Integer>> From<T> for SafeInt {
     }
 }
 
+/// Fixed-size, byte-backed integer that can be converted into `SafeInt`.
+///
+/// # Examples
+/// ```
+/// use safe_math::integer::ConstSafeInt;
+/// use safe_math::SafeInt;
+///
+/// const ONE: ConstSafeInt<2> = ConstSafeInt::from_bytes([0, 1]);
+/// assert_eq!(SafeInt::from(ONE), SafeInt::from(1));
+/// ```
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 #[repr(C)]
 pub struct ConstSafeInt<const N: usize>([u8; N]);
 
 impl<const N: usize> ConstSafeInt<N> {
+    /// Creates a constant from big-endian two's-complement bytes, where the first byte encodes the sign.
     pub const fn from_bytes(value: [u8; N]) -> Self {
         Self(value)
     }
 
+    /// Returns the underlying bytes.
     pub const fn as_bytes(&self) -> &[u8; N] {
         &self.0
     }
 
+    /// Converts into a runtime `SafeInt`.
     pub fn to_val(self) -> SafeInt {
         self.into()
     }
 }
 
 impl ConstSafeInt<17> {
+    /// Builds a 17-byte representation from an `i128` while preserving the sign bit.
+    ///
+    /// # Examples
+    /// ```
+    /// use safe_math::integer::ConstSafeInt;
+    /// use safe_math::SafeInt;
+    ///
+    /// const NEG_ONE: ConstSafeInt<17> = ConstSafeInt::from_i128(-1);
+    /// assert_eq!(SafeInt::from(NEG_ONE), SafeInt::from(-1));
+    /// ```
     pub const fn from_i128(value: i128) -> Self {
         let is_neg = value < 0;
         let value = if value == i128::MIN {
@@ -1626,6 +1706,7 @@ impl ConstSafeInt<17> {
         }
         res
     }
+    /// Builds a 17-byte representation from an unsigned 128-bit value.
     pub const fn from_u128(value: u128) -> Self {
         let mut res = [0; 17];
         let mut value = value;
