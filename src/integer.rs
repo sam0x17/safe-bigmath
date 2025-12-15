@@ -1,10 +1,16 @@
 use core::{cmp::Ordering, fmt::Display, ops::*, str::FromStr};
 use quoth::Parsable;
 use rug::{
+    Float,
     Integer,
     integer::Order,
     ops::{NegAssign, Pow},
 };
+
+#[cfg(test)]
+extern crate alloc;
+#[cfg(test)]
+use alloc::format;
 
 use crate::parsing::ParsedSafeInt;
 
@@ -146,6 +152,39 @@ impl SafeInt {
     pub fn ceil_div(&self, b: SafeInt) -> Option<SafeInt> {
         let one = SafeInt::from(1);
         Some(((self - one.clone()) / b)? + one)
+    }
+
+    /// Computes `(base_numerator / base_denominator)^(exponent_numerator / exponent_denominator)`
+    /// scaled by the provided factor. Returns `None` if the base or exponent denominator is zero
+    /// or if the base is non-positive.
+    pub fn pow_ratio_scaled(
+        base_numerator: &SafeInt,
+        base_denominator: &SafeInt,
+        exponent_numerator: &SafeInt,
+        exponent_denominator: &SafeInt,
+        precision: u32,
+        scale: &SafeInt,
+    ) -> Option<SafeInt> {
+        if base_denominator.is_zero() || exponent_denominator.is_zero() {
+            return None;
+        }
+        if base_numerator.is_zero() {
+            return Some(SafeInt::ZERO);
+        }
+        // Restrict to positive bases so ln() remains defined.
+        if base_numerator.is_negative() != base_denominator.is_negative() {
+            return None;
+        }
+
+        let base = Float::with_val(precision, base_numerator.raw())
+            / Float::with_val(precision, base_denominator.raw());
+        let exponent = Float::with_val(precision, exponent_numerator.raw())
+            / Float::with_val(precision, exponent_denominator.raw());
+
+        let powered = Float::with_val(precision, (base.ln() * exponent).exp());
+        let scaled = Float::with_val(precision, powered * Float::with_val(precision, scale.raw()));
+
+        scaled.floor().to_integer().map(SafeInt::from)
     }
 }
 
@@ -1704,6 +1743,33 @@ fn general() {
     assert_eq!(SafeInt::from(5) / 0, None);
     assert_eq!(&SafeInt::from(789) / 893797983, Some(SafeInt::from(0)));
     assert_eq!(&SafeInt::from(28249) / SafeInt::ZERO, None);
+}
+
+#[test]
+fn test_perquintill_power() {
+    const PRECISION: u32 = 256;
+    const PERQUINTILL: u128 = 1_000_000_000_000_000_000;
+
+    let x = SafeInt::from(21_000_000_000_000_000u64);
+    let delta = SafeInt::from(7_000_000_000_000_000u64);
+    let w1 = SafeInt::from(600_000_000_000_000_000u128);
+    let w2 = SafeInt::from(400_000_000_000_000_000u128);
+    let denominator = &x + &delta;
+    assert_eq!(w1.clone() + w2.clone(), SafeInt::from(PERQUINTILL));
+
+    let perquintill_result = SafeInt::pow_ratio_scaled(
+        &x,
+        &denominator,
+        &w1,
+        &w2,
+        PRECISION,
+        &SafeInt::from(PERQUINTILL),
+    )
+    .expect("perquintill integer result");
+
+    assert_eq!(perquintill_result, SafeInt::from(649_519_052_838_328_985u128));
+    let readable = crate::SafeDec::<18>::from_raw(perquintill_result);
+    assert_eq!(format!("{}", readable), "0.649519052838328985");
 }
 
 #[test]
