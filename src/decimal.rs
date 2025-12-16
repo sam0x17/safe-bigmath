@@ -132,22 +132,15 @@ fn gen_decimal_ops() {
     for self_type in ["SafeDec<D>", "&SafeDec<D>"] {
         // integer primitives
         for impl_type in [
-            "u8",
-            "u16",
-            "u32",
-            "u64",
-            "u128",
-            "i8",
-            "i16",
-            "i32",
-            "i64",
-            "i128",
-            "usize",
-            "isize",
+            "u8", "u16", "u32", "u64", "u128", "i8", "i16", "i32", "i64", "i128", "usize", "isize",
         ] {
             for op in ["Add", "Sub", "BitAnd", "BitOr", "BitXor"] {
                 let method = op.to_lowercase();
-                let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
+                let maybe_clone = if self_type == "&SafeDec<D>" {
+                    ".clone()"
+                } else {
+                    ""
+                };
                 let test_name = format!(
                     "test_{}_{}_{}",
                     op.to_lowercase(),
@@ -187,7 +180,11 @@ fn gen_decimal_ops() {
             }
             for op in ["Mul"] {
                 let method = op.to_lowercase();
-                let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
+                let maybe_clone = if self_type == "&SafeDec<D>" {
+                    ".clone()"
+                } else {
+                    ""
+                };
                 let test_name = format!(
                     "test_{}_{}_{}",
                     op.to_lowercase(),
@@ -223,8 +220,16 @@ fn gen_decimal_ops() {
         for impl_type in ["SafeDec<D>", "&SafeDec<D>"] {
             for op in ["Add", "Sub", "BitAnd", "BitOr", "BitXor"] {
                 let method = op.to_lowercase();
-                let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
-                let impl_maybe_clone = if impl_type == "&SafeDec<D>" { ".clone()" } else { "" };
+                let maybe_clone = if self_type == "&SafeDec<D>" {
+                    ".clone()"
+                } else {
+                    ""
+                };
+                let impl_maybe_clone = if impl_type == "&SafeDec<D>" {
+                    ".clone()"
+                } else {
+                    ""
+                };
                 let test_name = format!(
                     "test_{}_{}_{}",
                     op.to_lowercase(),
@@ -271,7 +276,11 @@ fn gen_decimal_ops() {
         for impl_type in ["SafeInt", "&SafeInt"] {
             for op in ["Add", "Sub", "BitAnd", "BitOr", "BitXor"] {
                 let method = op.to_lowercase();
-                let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
+                let maybe_clone = if self_type == "&SafeDec<D>" {
+                    ".clone()"
+                } else {
+                    ""
+                };
                 let test_name = format!(
                     "test_{}_{}_{}",
                     op.to_lowercase(),
@@ -315,7 +324,11 @@ fn gen_decimal_ops() {
             }
             for op in ["Mul"] {
                 let method = op.to_lowercase();
-                let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
+                let maybe_clone = if self_type == "&SafeDec<D>" {
+                    ".clone()"
+                } else {
+                    ""
+                };
                 let test_name = format!(
                     "test_{}_{}_{}",
                     op.to_lowercase(),
@@ -361,20 +374,13 @@ fn gen_decimal_divs() {
     for self_type in ["SafeDec<D>", "&SafeDec<D>"] {
         // integer primitives
         for impl_type in [
-            "u8",
-            "u16",
-            "u32",
-            "u64",
-            "u128",
-            "i8",
-            "i16",
-            "i32",
-            "i64",
-            "i128",
-            "usize",
-            "isize",
+            "u8", "u16", "u32", "u64", "u128", "i8", "i16", "i32", "i64", "i128", "usize", "isize",
         ] {
-            let maybe_clone = if self_type == "&SafeDec<D>" { ".clone()" } else { "" };
+            let maybe_clone = if self_type == "&SafeDec<D>" {
+                ".clone()"
+            } else {
+                ""
+            };
             let test_name = format!(
                 "test_div_{}_{}",
                 if self_type == "&SafeDec<D>" {
