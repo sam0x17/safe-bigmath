@@ -4,7 +4,7 @@ std = ["num-bigint/std", "num-traits/std", "num-integer/std"]
 
 [package]
 name = "safe-math"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2024"
 authors = ["sam0x17"]
 license = "MIT"
