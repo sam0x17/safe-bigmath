@@ -1172,6 +1172,29 @@ fn pow_ratio_scaled_converges_on_boundary_weights() {
 }
 
 #[test]
+fn pow_ratio_scaled_exact_path_handles_high_exponent() {
+    let base_num = SafeInt::from(999_999_999i128);
+    let base_den = SafeInt::from(1_000_000_001i128);
+    let exp_num = SafeInt::from(MAX_EXACT_EXPONENT as i128 - 1);
+    let exp_den = SafeInt::one();
+    let scale = SafeInt::from(1_000_000i128);
+    let precision = 64u32;
+
+    let start = std::time::Instant::now();
+    let result =
+        SafeInt::pow_ratio_scaled(&base_num, &base_den, &exp_num, &exp_den, precision, &scale)
+            .expect("exact path should return");
+    let elapsed = start.elapsed();
+
+    assert!(result > SafeInt::zero());
+    assert!(
+        elapsed < core::time::Duration::from_secs(1),
+        "exact path took {:?}",
+        elapsed
+    );
+}
+
+#[test]
 fn pow_ratio_scaled_default_max_iters_completes_quickly() {
     let base_num = SafeInt::from(1i128);
     let base_den = SafeInt::from(1_000_000_000_000i128);
