@@ -286,6 +286,7 @@ impl SafeInt {
         }
 
         let scale_abs = scale.0.to_biguint()?;
+        let scale_bits = u32::try_from(scale_abs.bits()).unwrap_or(u32::MAX);
 
         let exp_num_bits = exp_num.bits();
         let exp_den_bits = exp_den.bits();
@@ -312,8 +313,11 @@ impl SafeInt {
         // Fallback path for large exponents: approximate using fixed-point log/exp with guard bits.
         // Allow arbitrarily high requested precision (callers can cap via `max_iters`); enforce
         // only a reasonable floor to keep the series stable.
-        let requested_precision = precision.max(32);
-        let guard_bits: u32 = 16;
+        // Increase the minimum precision based on the magnitude of `scale` so that even when
+        // callers request coarse precision, we retain enough fractional bits to keep the final
+        // scaled integer accurate.
+        let requested_precision = precision.max(32).max(scale_bits.saturating_add(8));
+        let guard_bits: u32 = 24;
         let internal_precision = requested_precision.saturating_add(guard_bits);
         let default_max_iters = DEFAULT_MAX_ITERS.min(internal_precision as usize + 128);
         let max_iters = max_iters.unwrap_or(default_max_iters).max(1);
@@ -1225,6 +1229,28 @@ fn pow_ratio_scaled_default_max_iters_completes_quickly() {
         elapsed < core::time::Duration::from_secs(2),
         "default iterations took {:?}",
         elapsed
+    );
+}
+
+#[test]
+fn pow_ratio_scaled_uses_scale_to_pick_precision() {
+    // Force the fallback path (large exponent bits) and make sure the minimum precision we pick
+    // based on `scale` is close to a much higher requested precision.
+    let base_num = SafeInt::from(123_456_789u64);
+    let base_den = SafeInt::from(987_654_321u64);
+    let exp_num = SafeInt::from(987_654_321_123_456_789u128);
+    let exp_den = SafeInt::from(123_456_789_987_654_321u128);
+    let scale = SafeInt::from(1_000_000_000_000_000_000i128);
+
+    let coarse = SafeInt::pow_ratio_scaled(&base_num, &base_den, &exp_num, &exp_den, 0, &scale)
+        .expect("coarse precision result");
+    let precise = SafeInt::pow_ratio_scaled(&base_num, &base_den, &exp_num, &exp_den, 256, &scale)
+        .expect("high precision result");
+    let delta = (precise.clone() - coarse.clone()).abs();
+
+    assert!(
+        delta <= SafeInt::from(1u32),
+        "coarse {coarse} vs precise {precise} differed by {delta}"
     );
 }
 
