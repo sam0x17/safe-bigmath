@@ -330,72 +330,35 @@ impl SafeInt {
         let guard_factor = BigInt::from_biguint(Sign::Plus, guard_factor_uint.clone());
         let internal_scale = BigInt::from_biguint(Sign::Plus, internal_scale_uint.clone());
 
-        // Work with a ratio <= 1 to keep the log1p series stable; invert later if needed.
-        let invert_ratio = base_num > base_den;
-        let (log_num, log_den) = if invert_ratio {
-            (base_den.clone(), base_num.clone())
-        } else {
-            (base_num.clone(), base_den.clone())
-        };
-
-        if log_num.is_zero() {
-            return Some(SafeInt::zero());
-        }
-
-        let (mut ratio_scaled, remainder) = (&log_num << internal_precision).div_rem(&log_den);
-        if !remainder.is_zero() && (remainder << 1) >= log_den {
-            ratio_scaled += BigUint::one();
-        }
-        if ratio_scaled.is_zero() {
-            return Some(SafeInt::zero());
-        }
-
-        // Shift the ratio toward 1.0 using powers of two to improve ln1p convergence for very
-        // small bases (e.g. 0.1). We compute ln(ratio) = ln(ratio * 2^shift) - shift * ln(2).
-        let mut shift: usize = {
-            let num_bits = log_num.bits();
-            if num_bits == 0 {
-                0
-            } else {
-                log_den.bits().saturating_sub(num_bits) as usize
-            }
-        };
-        while shift > 0 && (&log_num << shift) >= log_den {
-            shift -= 1;
-        }
-        while (&log_num << shift) < (log_den.clone() >> 1) {
-            let next_shift = shift.saturating_add(1);
-            if (&log_num << next_shift) >= log_den {
-                break;
-            }
-            shift = next_shift;
-        }
-        let adjusted_num = &log_num << shift;
-
-        let (mut adjusted_ratio, adjusted_remainder) =
-            (&adjusted_num << internal_precision).div_rem(&log_den);
-        if !adjusted_remainder.is_zero() && (adjusted_remainder << 1) >= log_den {
-            adjusted_ratio += BigUint::one();
-        }
-        let mut ln_base = ln1p_fixed(
-            &(BigInt::from_biguint(Sign::Plus, adjusted_ratio) - &internal_scale),
+        let ln_half = ln1p_fixed(
+            &(-(&internal_scale >> 1usize)),
             &internal_scale,
             &guard_factor,
             max_iters,
         );
-        if shift > 0 {
-            let ln_half = ln1p_fixed(
-                &(-(&internal_scale >> 1usize)),
-                &internal_scale,
-                &guard_factor,
-                max_iters,
-            );
-            let ln_two = -ln_half;
-            ln_base -= ln_two * BigInt::from(shift as u64);
-        }
-        if invert_ratio {
-            ln_base = -ln_base;
-        }
+        let ln_two = -ln_half;
+
+        // Compute ln(base_num) - ln(base_den) using normalized mantissas near 1.0 for better
+        // convergence, regardless of how small or large the ratio is.
+        let ln_num = ln_biguint(
+            &base_num,
+            internal_precision,
+            &internal_scale_uint,
+            &internal_scale,
+            &guard_factor,
+            &ln_two,
+            max_iters,
+        );
+        let ln_den = ln_biguint(
+            &base_den,
+            internal_precision,
+            &internal_scale_uint,
+            &internal_scale,
+            &guard_factor,
+            &ln_two,
+            max_iters,
+        );
+        let ln_base = ln_num - ln_den;
 
         let ln_scaled = (ln_base * BigInt::from_biguint(Sign::Plus, exp_num))
             .div_floor(&BigInt::from_biguint(Sign::Plus, exp_den));
@@ -498,6 +461,44 @@ fn exp_fixed(x_fp: &BigInt, scale: &BigInt, guard_factor: &BigInt, max_iters: us
     }
 
     result
+}
+
+fn ln_biguint(
+    value: &BigUint,
+    internal_precision: u32,
+    internal_scale_uint: &BigUint,
+    internal_scale: &BigInt,
+    guard_factor: &BigInt,
+    ln_two: &BigInt,
+    max_iters: usize,
+) -> BigInt {
+    debug_assert!(!value.is_zero());
+    if value.is_zero() {
+        return BigInt::zero();
+    }
+
+    let int_prec = internal_precision as usize;
+    let mut shift = value.bits().saturating_sub(1);
+    let mut mantissa = value.clone() << int_prec;
+    mantissa >>= shift;
+
+    // Keep the mantissa close to 1.0 (in [0.5, 1.5)) for fast ln1p convergence.
+    let half_scale = internal_scale_uint >> 1;
+    let scale_plus_half = internal_scale_uint + &half_scale;
+    if mantissa >= scale_plus_half {
+        mantissa >>= 1;
+        shift = shift.saturating_add(1);
+    }
+
+    let mantissa_int = BigInt::from_biguint(Sign::Plus, mantissa);
+    let ln_mantissa = ln1p_fixed(
+        &(mantissa_int - internal_scale),
+        internal_scale,
+        guard_factor,
+        max_iters,
+    );
+
+    ln_mantissa + ln_two * BigInt::from(shift as u64)
 }
 
 fn round_to_precision(value: &BigInt, guard_factor: &BigInt) -> BigInt {
@@ -1310,6 +1311,31 @@ fn pow_ratio_scaled_handles_small_base_fractional_exponent() {
 
     assert!(
         delta <= SafeInt::from(128u32),
+        "result {result} vs expected {expected} (delta {delta})"
+    );
+}
+
+#[test]
+fn pow_ratio_scaled_handles_extreme_delta_x() {
+    let x = SafeInt::from(400_775_553u64);
+    let dx = SafeInt::from(14_446_633_907_665_582u64);
+    let base_den = &x + &dx;
+    let w1 = SafeInt::from(102_337_248_363_782_924u128);
+    let w2 = SafeInt::from(1_000_000_000_000_000_000u128) - &w1;
+    let scale = SafeInt::from(1_000_000_000_000_000_000u128);
+    let precision = 256u32;
+
+    let result = SafeInt::pow_ratio_scaled(&x, &base_den, &w1, &w2, precision, &scale)
+        .expect("extreme delta x");
+
+    let expected = ((x.0.to_f64().unwrap() / base_den.0.to_f64().unwrap())
+        .powf(w1.0.to_f64().unwrap() / w2.0.to_f64().unwrap())
+        * 1_000_000_000_000_000_000f64)
+        .floor() as u128;
+    let delta = (result.clone() - SafeInt::from(expected)).abs();
+
+    assert!(
+        delta <= SafeInt::from(1_000_000u128),
         "result {result} vs expected {expected} (delta {delta})"
     );
 }
