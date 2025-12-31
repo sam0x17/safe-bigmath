@@ -2,7 +2,7 @@
 #![deny(missing_docs)]
 //! Safe, non-panicking numeric primitives built on top of pure-Rust `num-bigint` (alloc-only).
 //!
-//! Enable the `std` feature to opt into `std` support for downstream consumers.
+//! `std` support is enabled by default; disable default features to use `no_std` + `alloc`.
 
 extern crate alloc;
 

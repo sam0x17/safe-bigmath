@@ -11,16 +11,16 @@ Safe, non-panicking numeric primitives built on pure-Rust `num-bigint`. `safe-bi
 - `SafeDec<D>`: fixed-scale decimals backed by arbitrary-precision `SafeInt`; the const generic `D` sets how many decimal places are stored exactly.
 - Parsing helpers for turning strings into safe numeric values.
 - No hidden panics: division returns `Option`, parsing reports structured errors.
-- `no_std` by default with an opt-in `std` feature; compiles for wasm (`wasm32-unknown-unknown`).
+- `std` by default; disable default features for `no_std` + `alloc` (works on `wasm32-unknown-unknown`).
 
 ## Quick start
 
 ```toml
 [dependencies]
-safe-bigmath = "0.1.0"
+safe-bigmath = "0.2"
 
-# Optional: enable std support
-# safe-bigmath = { version = "0.1.0", features = ["std"] }
+# Optional: go `no_std` + `alloc`
+# safe-bigmath = { version = "0.2", default-features = false }
 ```
 
 ### Safe integers
@@ -67,17 +67,18 @@ assert_eq!(result, SafeInt::from(649_519_052_838_328_985u128));
 
 ## Feature flags
 
-- `std` (off by default): enables `std` support for downstream crates. Default build is `no_std` + `alloc`.
+- `std` (on by default): enables `std` support for downstream crates; disable default features for `no_std` + `alloc`.
 
 ## Supported targets
 
-- `no_std` targets with `alloc` (default).
+- `std` targets (default).
+- `no_std` targets with `alloc` via `--no-default-features`.
 - `wasm32-unknown-unknown` (CI builds and test-compiles both `--no-default-features` and `--all-features`).
-- Any `std` target via the `std` feature.
 
 ## Testing
 
 ```bash
+cargo test --workspace
 cargo test --workspace --no-default-features
 cargo test --workspace --all-features
 cargo test --target wasm32-unknown-unknown --no-default-features --no-run

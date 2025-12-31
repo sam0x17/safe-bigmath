@@ -1,6 +1,12 @@
 [features]
-default = []
-std = ["num-bigint/std", "num-traits/std", "num-integer/std"]
+default = ["std"]
+std = [
+    "num-bigint/std",
+    "num-traits/std",
+    "num-integer/std",
+    "quoth/std",
+    "crabtime/std",
+]
 
 [package]
 name = "safe-bigmath"
@@ -13,8 +19,8 @@ keywords = ["biginteger", "decimal", "bigmath", "safe", "math"]
 documentation = "https://docs.rs/safe-bigmath"
 repository = "https://github.com/sam0x17/safe-bigmath"
 [dependencies]
-quoth = "0.2"
-crabtime = "1"
+quoth = { version = "0.3", default-features = false }
+crabtime = { version = "1.1", default-features = false }
 num-bigint = { version = "0.4", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 num-integer = { version = "0.1", default-features = false }
