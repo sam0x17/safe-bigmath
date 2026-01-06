@@ -470,9 +470,7 @@ impl SafeInt {
         // ---- Fallback path: fixed-point log/exp with guard bits ----
 
         // Same heuristic as in pow_ratio_scaled_with_max_iters:
-        let requested_precision = precision
-            .max(32)
-            .max(scale_bits.saturating_add(8));
+        let requested_precision = precision.max(32).max(scale_bits.saturating_add(8));
         let guard_bits: u32 = 24;
         let internal_precision = requested_precision.saturating_add(guard_bits);
         let default_max_iters = DEFAULT_MAX_ITERS.min(internal_precision as usize + 128);
@@ -522,8 +520,6 @@ impl SafeInt {
 
         Some(SafeInt(result))
     }
-
-
 }
 
 fn gcd_biguint(mut a: BigUint, mut b: BigUint) -> BigUint {
