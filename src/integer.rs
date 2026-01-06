@@ -369,6 +369,161 @@ impl SafeInt {
 
         Some(SafeInt(result))
     }
+
+    /// Exponentiate base to exponent. Base can be large integer number betwen 0 and u64::MAX
+    /// Optimal exponent values are between 0.1 and 0.9
+    pub fn pow_bigint_base(
+        base: &SafeInt,
+        exponent_numerator: &SafeInt,
+        exponent_denominator: &SafeInt,
+        precision: u32,
+        scale: &SafeInt,
+    ) -> Option<SafeInt> {
+        Self::pow_bigint_base_scaled_with_max_iters(
+            base,
+            exponent_numerator,
+            exponent_denominator,
+            precision,
+            scale,
+            None,
+        )
+    }
+
+    fn pow_bigint_base_scaled_with_max_iters(
+        base: &SafeInt,
+        exponent_numerator: &SafeInt,
+        exponent_denominator: &SafeInt,
+        precision: u32,
+        scale: &SafeInt,
+        max_iters: Option<usize>,
+    ) -> Option<SafeInt> {
+        use num_bigint::{BigInt, BigUint, Sign};
+        use num_integer::Integer;
+        use num_traits::{One, ToPrimitive, Zero};
+
+        // Guard rails
+        if exponent_denominator.is_zero() {
+            return None;
+        }
+        if base.is_zero() {
+            // Keep the same semantics as pow_ratio_scaled_with_max_iters:
+            // 0^anything -> 0 (including 0^0).
+            return Some(SafeInt::zero());
+        }
+        if scale.is_negative() {
+            return None;
+        }
+        // Restrict to positive base
+        if base.is_negative() {
+            return None;
+        }
+
+        // base is an integer; convert to BigUint
+        let base_uint = base.0.to_biguint()?;
+
+        let mut exp_num = exponent_numerator.0.to_biguint()?;
+        let mut exp_den = exponent_denominator.0.to_biguint()?;
+
+        if exp_num.is_zero() {
+            // base^0 ~= 1, scaled by `scale`
+            return Some(scale.clone());
+        }
+
+        // Reduce exponent fraction exp_num/exp_den
+        let g = gcd_biguint(exp_num.clone(), exp_den.clone());
+        if g > BigUint::one() {
+            exp_num /= g.clone();
+            exp_den /= g;
+        }
+
+        let scale_abs = scale.0.to_biguint()?;
+        let scale_bits = u32::try_from(scale_abs.bits()).unwrap_or(u32::MAX);
+
+        // ---- Fast path: small rational exponent, exact pow/root on integers ----
+        let exp_num_bits = exp_num.bits();
+        let exp_den_bits = exp_den.bits();
+        if exp_num_bits <= 32 && exp_den_bits <= 32 {
+            let exp_num_u32 = exp_num.to_u32()?;
+            let exp_den_u32 = exp_den.to_u32()?;
+            if exp_den_u32 == 0 {
+                return None;
+            }
+
+            if exp_num_u32 <= MAX_EXACT_EXPONENT {
+                // base^(exp_num/exp_den) * scale
+                //
+                // Compute:
+                //   (base^exp_num * scale^exp_den)^(1/exp_den)
+                // via nth_root_ratio_floor, same as in ratio version but with
+                // denominator fixed to 1.
+                let base_pow = base_uint.pow(exp_num_u32);
+                let scale_pow = scale_abs.pow(exp_den_u32);
+
+                let target_num = base_pow * scale_pow;
+                let target_den = BigUint::one();
+
+                let root = nth_root_ratio_floor(&target_num, &target_den, exp_den_u32);
+                return Some(SafeInt(BigInt::from_biguint(Sign::Plus, root)));
+            }
+        }
+
+        // ---- Fallback path: fixed-point log/exp with guard bits ----
+
+        // Same heuristic as in pow_ratio_scaled_with_max_iters:
+        let requested_precision = precision
+            .max(32)
+            .max(scale_bits.saturating_add(8));
+        let guard_bits: u32 = 24;
+        let internal_precision = requested_precision.saturating_add(guard_bits);
+        let default_max_iters = DEFAULT_MAX_ITERS.min(internal_precision as usize + 128);
+        let max_iters = max_iters.unwrap_or(default_max_iters).max(1);
+
+        let target_scale_uint = BigUint::one() << requested_precision;
+        let guard_factor_uint = BigUint::one() << guard_bits;
+        let internal_scale_uint = &target_scale_uint << guard_bits;
+
+        let target_scale = BigInt::from_biguint(Sign::Plus, target_scale_uint.clone());
+        let guard_factor = BigInt::from_biguint(Sign::Plus, guard_factor_uint.clone());
+        let internal_scale = BigInt::from_biguint(Sign::Plus, internal_scale_uint.clone());
+
+        // ln(2) via ln1p_fixed(-1/2)
+        let ln_half = ln1p_fixed(
+            &(-(&internal_scale >> 1usize)),
+            &internal_scale,
+            &guard_factor,
+            max_iters,
+        );
+        let ln_two = -ln_half;
+
+        // ln(base) using normalized mantissa (same helper as ratio version)
+        let ln_base = ln_biguint(
+            &base_uint,
+            internal_precision,
+            &internal_scale_uint,
+            &internal_scale,
+            &guard_factor,
+            &ln_two,
+            max_iters,
+        );
+
+        // ln(base) * exp_num / exp_den
+        let ln_scaled = (ln_base * BigInt::from_biguint(Sign::Plus, exp_num))
+            .div_floor(&BigInt::from_biguint(Sign::Plus, exp_den));
+
+        // exp(ln_scaled) in fixed-point
+        let exp_fp = exp_fixed(&ln_scaled, &internal_scale, &guard_factor, max_iters);
+
+        // Drop guard bits
+        let exp_requested = round_to_precision(&exp_fp, &guard_factor);
+
+        // Scale by `scale_abs` and rescale to integer
+        let result =
+            (exp_requested * BigInt::from_biguint(Sign::Plus, scale_abs)).div_floor(&target_scale);
+
+        Some(SafeInt(result))
+    }
+
+
 }
 
 fn gcd_biguint(mut a: BigUint, mut b: BigUint) -> BigUint {
