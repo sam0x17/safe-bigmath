@@ -1545,4 +1545,9 @@ fn test_checked_div() {
             .checked_div(SafeInt::from(5)),
         Some(u64max.clone() * u64max.clone() * u64max.clone() * SafeInt::from(u64::MAX / 5))
     );
+    assert_eq!(
+        (u64max.clone() * u64max.clone() * u64max.clone() * u64max.clone())
+            .checked_div(SafeInt::from(0)),
+        None
+    );
 }
