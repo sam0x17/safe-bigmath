@@ -1441,10 +1441,10 @@ fn lencode_decode_biguint_with_variant(reader: &mut impl Read) -> lencode::Resul
 #[inline(always)]
 fn lencode_zigzag_encode_bigint(value: &BigInt) -> BigUint {
     if value.is_negative() {
-        let magnitude = (-value).to_biguint().unwrap_or_else(|| BigUint::ZERO);
+        let magnitude = (-value).to_biguint().unwrap_or(BigUint::ZERO);
         (magnitude << 1usize) - BigUint::from(1u8)
     } else {
-        let magnitude = value.to_biguint().unwrap_or_else(|| BigUint::ZERO);
+        let magnitude = value.to_biguint().unwrap_or(BigUint::ZERO);
         magnitude << 1usize
     }
 }
