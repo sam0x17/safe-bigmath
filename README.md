@@ -69,6 +69,30 @@ assert_eq!(result, SafeInt::from(649_519_052_838_328_985u128));
 
 - `std` (on by default): enables `std` support for downstream crates; disable default features for `no_std` + `alloc`.
 
+## Lencode encoding/decoding
+
+`SafeInt` and `SafeDec<D>` implement `lencode::Encode` and `lencode::Decode`. The format is
+stable and `no_std`-friendly, and always uses little-endian byte order for the payload.
+
+`SafeInt` encoding is zigzag over the signed magnitude, then a compact header:
+
+- Header byte layout (from MSB to LSB): `V S LLLLLL`
+  - `V` (bit 7): variant. `0` = varint path, `1` = bytes path.
+  - `S` (bit 6): size mode (varint path only). `0` = small (value fits in 6 bits),
+    `1` = large (next `L` bytes are the little-endian payload).
+  - `L` (bits 0..5): when `S=0`, the value itself; when `S=1`, the payload length in bytes.
+- Varint path (V=0):
+  - Small: one byte total, supports zigzag values in `[0, 63]`.
+  - Large: `1 + L` bytes total, supports zigzag payloads up to 63 bytes.
+- Bytes path (V=1):
+  - Encodes the zigzag payload as `Vec<u8>` using lencode (varint length + payload, with
+    optional compression), allowing arbitrary magnitudes.
+
+Range note: the varint path covers signed values in `[-2^503, 2^503 - 1]`. Larger magnitudes
+use the bytes path automatically.
+
+`SafeDec<D>` encodes exactly like its underlying scaled `SafeInt` (the raw integer at scale `D`).
+
 ## Supported targets
 
 - `std` targets (default).
