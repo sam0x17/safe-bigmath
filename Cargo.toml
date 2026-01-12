@@ -5,6 +5,7 @@ std = [
     "num-traits/std",
     "num-integer/std",
     "quoth/std",
+    "lencode/std",
 ]
 
 [package]
@@ -22,3 +23,4 @@ quoth = { version = "0.3", default-features = false }
 num-bigint = { version = "0.4", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 num-integer = { version = "0.1", default-features = false }
+lencode = { version = "0.1", default-features = false }

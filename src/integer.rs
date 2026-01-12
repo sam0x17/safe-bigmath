@@ -1,5 +1,7 @@
 extern crate alloc;
 
+#[cfg(not(feature = "std"))]
+use alloc::vec;
 use core::{cmp::Ordering, fmt::Display, ops::*, str::FromStr};
 use num_bigint::{BigInt, BigUint, Sign};
 use num_integer::Integer;
@@ -8,6 +10,13 @@ use quoth::Parsable;
 
 #[cfg(test)]
 use alloc::format;
+#[cfg(test)]
+use alloc::vec::Vec;
+#[cfg(test)]
+use lencode::io::Cursor;
+use lencode::dedupe::{DedupeDecoder, DedupeEncoder};
+use lencode::io::{Error, Read, Write};
+use lencode::{Decode, Encode};
 
 use crate::parsing::ParsedSafeInt;
 
@@ -1344,6 +1353,97 @@ impl<const N: usize> From<&ConstSafeInt<N>> for SafeInt {
     }
 }
 
+const LENCODE_MAX_VARINT_BYTES: usize = 0x7F;
+
+fn lencode_encode_biguint_varint(
+    value: &BigUint,
+    writer: &mut impl Write,
+) -> lencode::Result<usize> {
+    if *value <= BigUint::from(127u8) {
+        let byte = value.to_u8().expect("value fits in u8");
+        return writer.write(&[byte]);
+    }
+
+    let bytes = value.to_bytes_le();
+    if bytes.len() > LENCODE_MAX_VARINT_BYTES {
+        return Err(Error::IncorrectLength);
+    }
+
+    let mut total = 0;
+    total += writer.write(&[0x80 | (bytes.len() as u8)])?;
+    total += writer.write(&bytes)?;
+    Ok(total)
+}
+
+fn lencode_decode_biguint_varint(reader: &mut impl Read) -> lencode::Result<BigUint> {
+    let mut first = [0u8; 1];
+    if reader.read(&mut first)? != 1 {
+        return Err(Error::ReaderOutOfData);
+    }
+    let first = first[0];
+    if (first & 0x80) == 0 {
+        return Ok(BigUint::from(first));
+    }
+
+    let len = (first & 0x7F) as usize;
+    if len == 0 {
+        return Err(Error::InvalidData);
+    }
+
+    let mut buf = vec![0u8; len];
+    let mut read = 0usize;
+    while read < len {
+        let n = reader.read(&mut buf[read..])?;
+        if n == 0 {
+            return Err(Error::ReaderOutOfData);
+        }
+        read += n;
+    }
+    Ok(BigUint::from_bytes_le(&buf))
+}
+
+fn lencode_zigzag_encode_bigint(value: &BigInt) -> BigUint {
+    if value.is_negative() {
+        let magnitude = (-value).to_biguint().unwrap_or_else(|| BigUint::ZERO);
+        (magnitude << 1usize) - BigUint::from(1u8)
+    } else {
+        let magnitude = value.to_biguint().unwrap_or_else(|| BigUint::ZERO);
+        magnitude << 1usize
+    }
+}
+
+fn lencode_zigzag_decode_biguint(value: BigUint) -> BigInt {
+    if value.is_odd() {
+        let magnitude = (value + BigUint::from(1u8)) >> 1usize;
+        -BigInt::from(magnitude)
+    } else {
+        BigInt::from(value >> 1usize)
+    }
+}
+
+impl Encode for SafeInt {
+    #[inline]
+    fn encode_ext(
+        &self,
+        writer: &mut impl Write,
+        _dedupe_encoder: Option<&mut DedupeEncoder>,
+    ) -> lencode::Result<usize> {
+        let encoded = lencode_zigzag_encode_bigint(&self.0);
+        lencode_encode_biguint_varint(&encoded, writer)
+    }
+}
+
+impl Decode for SafeInt {
+    #[inline]
+    fn decode_ext(
+        reader: &mut impl Read,
+        _dedupe_decoder: Option<&mut DedupeDecoder>,
+    ) -> lencode::Result<Self> {
+        let unsigned = lencode_decode_biguint_varint(reader)?;
+        Ok(SafeInt::from_raw(lencode_zigzag_decode_biguint(unsigned)))
+    }
+}
+
 #[test]
 fn test_const_safe_int() {
     assert_eq!(
@@ -1648,4 +1748,142 @@ fn test_zero() {
 fn test_one() {
     let one = SafeInt::one();
     assert_eq!(one, 1);
+}
+
+#[cfg(test)]
+fn expected_varint_bytes(value: &BigUint) -> Vec<u8> {
+    if *value <= BigUint::from(127u8) {
+        vec![value.to_u8().expect("value fits in u8")]
+    } else {
+        let bytes = value.to_bytes_le();
+        let mut out = Vec::with_capacity(1 + bytes.len());
+        out.push(0x80 | (bytes.len() as u8));
+        out.extend_from_slice(&bytes);
+        out
+    }
+}
+
+#[test]
+fn lencode_safe_int_roundtrip() {
+    let big = BigInt::from(1u8) << 200usize;
+    let values = [
+        SafeInt::from(0),
+        SafeInt::from(1),
+        SafeInt::from(-1),
+        SafeInt::from(127),
+        SafeInt::from(128),
+        SafeInt::from(-128),
+        SafeInt::from(255),
+        SafeInt::from(-255),
+        SafeInt::from_raw(big.clone()),
+        SafeInt::from_raw(-big),
+    ];
+
+    for value in values {
+        let mut buf = Vec::new();
+        let written = value.encode(&mut buf).unwrap();
+        assert_eq!(written, buf.len());
+        let decoded = SafeInt::decode(&mut Cursor::new(&buf)).unwrap();
+        assert_eq!(decoded, value);
+    }
+}
+
+#[test]
+fn lencode_safe_int_known_encodings() {
+    let cases: &[(i32, &[u8])] = &[
+        (0, &[0x00]),
+        (1, &[0x02]),
+        (-1, &[0x01]),
+        (63, &[0x7E]),
+        (-64, &[0x7F]),
+        (64, &[0x81, 0x80]),
+        (128, &[0x82, 0x00, 0x01]),
+        (-128, &[0x81, 0xFF]),
+        (300, &[0x82, 0x58, 0x02]),
+    ];
+
+    for &(value, expected) in cases {
+        let mut buf = Vec::new();
+        let written = SafeInt::from(value).encode(&mut buf).unwrap();
+        assert_eq!(written, buf.len());
+        assert_eq!(buf, expected);
+    }
+}
+
+#[test]
+fn lencode_safe_int_large_encoding_structure() {
+    let base = BigInt::from(1u8) << 200usize;
+    let values = [
+        SafeInt::from_raw(base.clone()),
+        SafeInt::from_raw(base.clone() + BigInt::from(0x1234u32)),
+        SafeInt::from_raw(-base),
+    ];
+
+    for value in values {
+        let mut buf = Vec::new();
+        value.encode(&mut buf).unwrap();
+
+        let raw = value.raw();
+        let zigzag = if raw.is_negative() {
+            let magnitude = (-raw).to_biguint().expect("negative magnitude");
+            (magnitude << 1usize) - BigUint::from(1u8)
+        } else {
+            let magnitude = raw.to_biguint().unwrap_or_else(|| BigUint::ZERO);
+            magnitude << 1usize
+        };
+        let payload = zigzag.to_bytes_le();
+        assert!(payload.len() > 1);
+        assert_eq!(buf[0], 0x80 | (payload.len() as u8));
+        assert_eq!(&buf[1..], payload.as_slice());
+    }
+}
+
+#[test]
+fn lencode_safe_int_matches_varint_bytes() {
+    let values = [
+        SafeInt::from(0),
+        SafeInt::from(42),
+        SafeInt::from(-42),
+        SafeInt::from(1_000_000),
+        SafeInt::from(-1_000_000),
+    ];
+
+    for value in values {
+        let raw = value.raw();
+        let zigzag = if raw.is_negative() {
+            let magnitude = (-raw).to_biguint().expect("negative magnitude");
+            (magnitude << 1usize) - BigUint::from(1u8)
+        } else {
+            let magnitude = raw.to_biguint().unwrap_or_else(|| BigUint::ZERO);
+            magnitude << 1usize
+        };
+        let expected = expected_varint_bytes(&zigzag);
+
+        let mut buf = Vec::new();
+        value.encode(&mut buf).unwrap();
+        assert_eq!(buf, expected);
+    }
+}
+
+#[test]
+fn lencode_safe_int_rejects_zero_length_prefix() {
+    let data = [0x80u8];
+    let err = SafeInt::decode(&mut Cursor::new(&data[..])).unwrap_err();
+    assert!(matches!(err, Error::InvalidData));
+}
+
+#[test]
+fn lencode_safe_int_rejects_truncated_payload() {
+    let data = [0x82u8, 0x01];
+    let err = SafeInt::decode(&mut Cursor::new(&data[..])).unwrap_err();
+    assert!(matches!(err, Error::ReaderOutOfData));
+}
+
+#[test]
+fn lencode_safe_int_rejects_too_large() {
+    let too_large = BigInt::from(1u8) << (8 * LENCODE_MAX_VARINT_BYTES);
+    let value = SafeInt::from_raw(too_large);
+    let mut buf = Vec::new();
+    let err = value.encode(&mut buf).unwrap_err();
+    assert!(matches!(err, Error::IncorrectLength));
 }

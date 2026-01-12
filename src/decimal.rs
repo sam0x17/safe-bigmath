@@ -1,9 +1,16 @@
 extern crate alloc;
 
+#[cfg(test)]
+use alloc::vec::Vec;
 use crate::{SafeInt, parsing::ParsedSafeDec};
 #[cfg(test)]
 use alloc::string::ToString;
+#[cfg(test)]
+use lencode::io::Cursor;
 use core::{fmt::Display, ops::*, str::FromStr};
+use lencode::dedupe::{DedupeDecoder, DedupeEncoder};
+use lencode::io::{Read, Write};
+use lencode::{Decode, Encode};
 use quoth::Parsable;
 
 /// Fixed-point decimal built on top of `SafeInt` with `D` fractional digits.
@@ -108,6 +115,27 @@ impl<const D: usize> Display for SafeDec<D> {
         }
 
         Ok(())
+    }
+}
+
+impl<const D: usize> Encode for SafeDec<D> {
+    #[inline]
+    fn encode_ext(
+        &self,
+        writer: &mut impl Write,
+        dedupe_encoder: Option<&mut DedupeEncoder>,
+    ) -> lencode::Result<usize> {
+        self.0.encode_ext(writer, dedupe_encoder)
+    }
+}
+
+impl<const D: usize> Decode for SafeDec<D> {
+    #[inline]
+    fn decode_ext(
+        reader: &mut impl Read,
+        dedupe_decoder: Option<&mut DedupeDecoder>,
+    ) -> lencode::Result<Self> {
+        Ok(SafeDec(SafeInt::decode_ext(reader, dedupe_decoder)?))
     }
 }
 
@@ -984,4 +1012,55 @@ fn test_complex() {
     let b = "0.00001".parse::<SafeDec<10>>().unwrap();
     let c = a * b;
     assert_eq!(c.to_string(), "0.0000500000");
+}
+
+#[test]
+fn lencode_safe_dec_roundtrip_scale_2() {
+    let values = [
+        SafeDec::<2>::from_raw(0),
+        SafeDec::<2>::from_raw(12345),
+        SafeDec::<2>::from_raw(-9876),
+        "99.99".parse::<SafeDec<2>>().unwrap(),
+        "-0.01".parse::<SafeDec<2>>().unwrap(),
+    ];
+
+    for value in values {
+        let mut buf = Vec::new();
+        let written = value.encode(&mut buf).unwrap();
+        assert_eq!(written, buf.len());
+        let decoded = SafeDec::<2>::decode(&mut Cursor::new(&buf)).unwrap();
+        assert_eq!(decoded, value);
+    }
+}
+
+#[test]
+fn lencode_safe_dec_roundtrip_scale_6() {
+    let values = [
+        SafeDec::<6>::from_raw(0),
+        SafeDec::<6>::from_raw(123_456_789),
+        SafeDec::<6>::from_raw(-654_321_000),
+        "0.000123".parse::<SafeDec<6>>().unwrap(),
+        "-987.654321".parse::<SafeDec<6>>().unwrap(),
+    ];
+
+    for value in values {
+        let mut buf = Vec::new();
+        let written = value.encode(&mut buf).unwrap();
+        assert_eq!(written, buf.len());
+        let decoded = SafeDec::<6>::decode(&mut Cursor::new(&buf)).unwrap();
+        assert_eq!(decoded, value);
+    }
+}
+
+#[test]
+fn lencode_safe_dec_matches_safe_int_encoding() {
+    let raw = SafeInt::from(-123_456i32);
+    let dec = SafeDec::<4>::from_raw(raw.clone());
+
+    let mut dec_buf = Vec::new();
+    let mut int_buf = Vec::new();
+    dec.encode(&mut dec_buf).unwrap();
+    raw.encode(&mut int_buf).unwrap();
+
+    assert_eq!(dec_buf, int_buf);
 }
