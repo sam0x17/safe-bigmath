@@ -11,7 +11,10 @@ Safe, non-panicking numeric primitives built on pure-Rust `num-bigint`. `safe-bi
 - `SafeDec<D>`: fixed-scale decimals backed by arbitrary-precision `SafeInt`; the const generic `D` sets how many decimal places are stored exactly.
 - Parsing helpers for turning strings into safe numeric values.
 - No hidden panics: division returns `Option`, parsing reports structured errors.
-- `std` by default; disable default features for `no_std` + `alloc` (works on `wasm32-unknown-unknown`).
+- `std` by default; disable default features for `no_std` + `alloc` (works on
+  `wasm32-unknown-unknown`).
+- only possible way this library can panic is if the host runs out of memory, which would take
+  some truly large numbers
 
 ## Quick start
 
