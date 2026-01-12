@@ -91,6 +91,18 @@ stable and `no_std`-friendly, and always uses little-endian byte order for the p
 Range note: the varint path covers signed values in `[-2^503, 2^503 - 1]`. Larger magnitudes
 use the bytes path automatically.
 
+Approximate sizes for common ranges (zigzag is the unsigned value after zigzag encoding):
+
+| SafeInt range (inclusive) | Zigzag range | Encoding | Total bytes |
+| --- | --- | --- | --- |
+| -32..31 | 0..63 | varint small | 1 |
+| -128..-33, 32..127 | 64..255 | varint L=1 | 2 |
+| -32_768..-129, 128..32_767 | 256..65_535 | varint L=2 | 3 |
+| -8_388_608..-32_769, 32_768..8_388_607 | 65_536..16_777_215 | varint L=3 | 4 |
+| -2_147_483_648..-8_388_609, 8_388_608..2_147_483_647 | 16_777_216..4_294_967_295 | varint L=4 | 5 |
+| ... | ... | varint L=5..63 | 6..64 |
+| |n| >= 2^503 | zigzag payload >63 bytes | bytes path (0x80 + lencode Vec) |
+
 `SafeDec<D>` encodes exactly like its underlying scaled `SafeInt` (the raw integer at scale `D`).
 
 ## Supported targets
