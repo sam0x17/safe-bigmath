@@ -13,6 +13,8 @@ Safe, non-panicking numeric primitives built on pure-Rust `num-bigint`. `safe-bi
 - No hidden panics: division returns `Option`, parsing reports structured errors.
 - `std` by default; disable default features for `no_std` + `alloc` (works on
   `wasm32-unknown-unknown`).
+- Extremely efficient binary wire format and encoding/decoding provided by a custom
+  [lencode](https://crates.io/crates/lencode) implementation
 - only possible way this library can panic is if the host runs out of memory, which would take
   some truly large numbers
 
