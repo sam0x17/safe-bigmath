@@ -1,14 +1,14 @@
 extern crate alloc;
 
-#[cfg(test)]
-use alloc::vec::Vec;
 use crate::{SafeInt, parsing::ParsedSafeDec};
 #[cfg(test)]
 use alloc::string::ToString;
 #[cfg(test)]
-use lencode::io::Cursor;
+use alloc::vec::Vec;
 use core::{fmt::Display, ops::*, str::FromStr};
 use lencode::dedupe::{DedupeDecoder, DedupeEncoder};
+#[cfg(test)]
+use lencode::io::Cursor;
 use lencode::io::{Read, Write};
 use lencode::{Decode, Encode};
 use quoth::Parsable;
@@ -119,7 +119,7 @@ impl<const D: usize> Display for SafeDec<D> {
 }
 
 impl<const D: usize> Encode for SafeDec<D> {
-    #[inline]
+    #[inline(always)]
     fn encode_ext(
         &self,
         writer: &mut impl Write,
@@ -130,7 +130,7 @@ impl<const D: usize> Encode for SafeDec<D> {
 }
 
 impl<const D: usize> Decode for SafeDec<D> {
-    #[inline]
+    #[inline(always)]
     fn decode_ext(
         reader: &mut impl Read,
         dedupe_decoder: Option<&mut DedupeDecoder>,
