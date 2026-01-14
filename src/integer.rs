@@ -464,6 +464,7 @@ impl SafeInt {
                 return None;
             }
 
+            // TODO: check exp_den_u32 for pow bug
             if exp_num_u32 <= MAX_EXACT_EXPONENT {
                 // base^(exp_num/exp_den) * scale
                 //
