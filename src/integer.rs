@@ -533,6 +533,69 @@ impl SafeInt {
 
         Some(SafeInt(result))
     }
+
+    /// Calculates integer part of log10 of this SafeInt
+    #[inline(always)]
+    pub fn log10(
+        &self,
+        scale: &SafeInt,
+        precision: u32,
+        max_iters: Option<usize>,
+    ) -> Option<SafeInt> {
+        if self.is_negative() {
+            None
+        } else if self.is_zero() {
+            None
+        } else if *self < 10 {
+            Some(SafeInt::from(0))
+        } else {
+            let scale_abs = scale.0.to_biguint()?;
+            let scale_bits = u32::try_from(scale_abs.bits()).unwrap_or(u32::MAX);
+            let requested_precision = precision.max(32).max(scale_bits.saturating_add(8));
+            let guard_bits: u32 = 24;
+            let internal_precision = requested_precision.saturating_add(guard_bits);
+            let target_scale_uint = BigUint::one() << requested_precision;
+            let internal_scale_uint = &target_scale_uint << guard_bits;
+            let guard_factor_uint = BigUint::one() << guard_bits;
+            let guard_factor = BigInt::from_biguint(Sign::Plus, guard_factor_uint.clone());
+            let internal_scale = BigInt::from_biguint(Sign::Plus, internal_scale_uint.clone());
+            let default_max_iters = DEFAULT_MAX_ITERS.min(internal_precision as usize + 128);
+            let max_iters = max_iters.unwrap_or(default_max_iters).max(1);
+            let ln_half = ln1p_fixed(
+                &(-(&internal_scale >> 1usize)),
+                &internal_scale,
+                &guard_factor,
+                max_iters,
+            );
+            let ln_two = -ln_half;
+
+            let value_uint = self.0.to_biguint()?;
+            let ln_value = ln_biguint(
+                &value_uint,
+                internal_precision,
+                &internal_scale_uint,
+                &internal_scale,
+                &guard_factor,
+                &ln_two,
+                max_iters,
+            );
+            let ten_uint = BigUint::from(10u32);
+            let ln_ten = ln_biguint(
+                &ten_uint,
+                internal_precision,
+                &internal_scale_uint,
+                &internal_scale,
+                &guard_factor,
+                &ln_two,
+                max_iters,
+            );
+
+            // Divide ln_value by ln_ten
+            let ln_value = SafeInt::from(ln_value);
+            let ln_ten = SafeInt::from(ln_ten);
+            ln_value / ln_ten
+        }
+    }
 }
 
 fn gcd_biguint(mut a: BigUint, mut b: BigUint) -> BigUint {
@@ -1932,4 +1995,36 @@ fn lencode_safe_int_large_values_use_bytes_variant() {
 
     let decoded = SafeInt::decode(&mut Cursor::new(&buf)).unwrap();
     assert_eq!(decoded, value);
+}
+
+#[test]
+fn test_log10() {
+    let scale = SafeInt::from(1_000_000_000_000_000_000i128);
+    let precision = 256u32;
+    let max_iters = Some(DEFAULT_MAX_ITERS);
+
+    // Test case value, expected_result
+    [
+        (1_u64, 0_u64),
+        (10, 1),
+        (11, 1),
+        (99, 1),
+        // (100, 2),
+        (101, 2),
+        (999, 2),
+        // (1000, 3),
+        (1001, 3),
+        (1_000_000_000_000_000_001, 18),
+        (9_999_999_999_999_999_999, 18),
+    ]
+    .into_iter()
+    .for_each(|(value, expected)| {
+        assert_eq!(
+            SafeInt::from(value).log10(&scale, precision, max_iters),
+            Some(SafeInt::from(expected))
+        );
+    });
+
+    assert_eq!(SafeInt::from(0).log10(&scale, precision, max_iters), None);
+    assert_eq!(SafeInt::from(-1).log10(&scale, precision, max_iters), None);
 }
