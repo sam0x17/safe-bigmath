@@ -544,9 +544,7 @@ impl SafeInt {
         precision: u32,
         max_iters: Option<usize>,
     ) -> Option<SafeInt> {
-        if self.is_negative() {
-            None
-        } else if self.is_zero() {
+        if self.is_negative() || self.is_zero() {
             None
         } else if *self < 10 {
             Some(SafeInt::from(0))
@@ -1650,7 +1648,7 @@ fn test_safe_int_cmp_self() {
     assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
     assert_eq!(b.partial_cmp(&a), Some(Ordering::Greater));
     assert_eq!(a.cmp(&a2), Ordering::Equal);
-    assert_eq!((&a).cmp(&b), Ordering::Less);
+    assert_eq!(a.cmp(&b), Ordering::Less);
 }
 
 #[test]
@@ -1806,7 +1804,7 @@ fn pow_ratio_scaled_uses_scale_to_pick_precision() {
     let delta = (precise.clone() - coarse.clone()).abs();
 
     assert!(
-        delta <= SafeInt::from(1u32),
+        delta <= 1u32,
         "coarse {coarse} vs precise {precise} differed by {delta}"
     );
 }
@@ -1829,7 +1827,7 @@ fn pow_ratio_scaled_handles_small_base_fractional_exponent() {
     let delta = (result.clone() - SafeInt::from(expected)).abs();
 
     assert!(
-        delta <= SafeInt::from(128u32),
+        delta <= 128u32,
         "result {result} vs expected {expected} (delta {delta})"
     );
 }
@@ -1854,7 +1852,7 @@ fn pow_ratio_scaled_handles_extreme_delta_x() {
     let delta = (result.clone() - SafeInt::from(expected)).abs();
 
     assert!(
-        delta <= SafeInt::from(1_000_000u128),
+        delta <= 1_000_000u128,
         "result {result} vs expected {expected} (delta {delta})"
     );
 }
@@ -2016,7 +2014,7 @@ fn lencode_safe_int_large_encoding_structure() {
             let magnitude = (-raw).to_biguint().expect("negative magnitude");
             (magnitude << 1usize) - BigUint::from(1u8)
         } else {
-            let magnitude = raw.to_biguint().unwrap_or_else(|| BigUint::ZERO);
+            let magnitude = raw.to_biguint().unwrap_or(BigUint::ZERO);
             magnitude << 1usize
         };
         let payload = zigzag.to_bytes_le();
@@ -2042,7 +2040,7 @@ fn lencode_safe_int_matches_varint_bytes() {
             let magnitude = (-raw).to_biguint().expect("negative magnitude");
             (magnitude << 1usize) - BigUint::from(1u8)
         } else {
-            let magnitude = raw.to_biguint().unwrap_or_else(|| BigUint::ZERO);
+            let magnitude = raw.to_biguint().unwrap_or(BigUint::ZERO);
             magnitude << 1usize
         };
         let expected = expected_varint_bytes(&zigzag);
