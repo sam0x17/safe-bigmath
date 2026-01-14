@@ -464,7 +464,7 @@ impl SafeInt {
                 return None;
             }
 
-            if exp_num_u32 <= MAX_EXACT_EXPONENT && exp_den_u32 <= MAX_EXACT_EXPONENT{
+            if exp_num_u32 <= MAX_EXACT_EXPONENT && exp_den_u32 <= MAX_EXACT_EXPONENT {
                 // base^(exp_num/exp_den) * scale
                 //
                 // Compute:
@@ -1860,11 +1860,11 @@ fn pow_ratio_scaled_handles_extreme_delta_x() {
 #[test]
 fn pow_ratio_scaled_with_crafted_gcd_values() {
     /*
-        w1_safe and w2_safe are picked with the following rules:
-           - they don't have GCD > 1
-           - w1_safe < 1024
-           - bits(w2_safe) <= 32
-     */
+       w1_safe and w2_safe are picked with the following rules:
+          - they don't have GCD > 1
+          - w1_safe < 1024
+          - bits(w2_safe) <= 32
+    */
     let x_safe = SafeInt::from_str("2100000000000000000000000").unwrap();
     let denominator = SafeInt::from_str("210000000000000000000000").unwrap();
     let w1_safe = SafeInt::from_str("499").unwrap();
@@ -1894,11 +1894,11 @@ fn pow_ratio_scaled_with_crafted_gcd_values() {
 #[test]
 fn pow_bigint_base_with_crafted_gcd_values() {
     /*
-        w1_safe and w2_safe are picked with the following rules:
-           - they don't have GCD > 1
-           - w1_safe < 1024
-           - bits(w2_safe) <= 32
-     */
+       w1_safe and w2_safe are picked with the following rules:
+          - they don't have GCD > 1
+          - w1_safe < 1024
+          - bits(w2_safe) <= 32
+    */
     let x_safe = SafeInt::from_str("2100000000000000000000000").unwrap();
     let w1_safe = SafeInt::from_str("499").unwrap();
     let w2_safe = SafeInt::from_str("1538820023").unwrap();
@@ -1907,13 +1907,7 @@ fn pow_bigint_base_with_crafted_gcd_values() {
 
     let start = Instant::now();
 
-    SafeInt::pow_bigint_base(
-        &x_safe,
-        &w1_safe,
-        &w2_safe,
-        precision,
-        &perquintill_scale,
-    );
+    SafeInt::pow_bigint_base(&x_safe, &w1_safe, &w2_safe, precision, &perquintill_scale);
     let elapsed = start.elapsed();
 
     assert!(

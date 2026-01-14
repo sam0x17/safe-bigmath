@@ -1189,7 +1189,6 @@ fn lencode_safe_dec_matches_safe_int_encoding() {
     assert_eq!(dec_buf, int_buf);
 }
 
-
 // TODO: Restore and fix the bug
 // #[test]
 // fn test_large_safe_dec_const_difference() {
