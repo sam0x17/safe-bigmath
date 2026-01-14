@@ -16,6 +16,8 @@ use lencode::dedupe::{DedupeDecoder, DedupeEncoder};
 use lencode::io::Cursor;
 use lencode::io::{Error, Read, Write};
 use lencode::{Decode, Encode};
+#[cfg(test)]
+use std::time::{Duration, Instant};
 
 use crate::parsing::ParsedSafeInt;
 
@@ -310,7 +312,7 @@ impl SafeInt {
                 return None;
             }
 
-            if exp_num_u32 <= MAX_EXACT_EXPONENT {
+            if exp_num_u32 <= MAX_EXACT_EXPONENT && exp_den_u32 <= MAX_EXACT_EXPONENT {
                 let base_num_pow = base_num.pow(exp_num_u32);
                 let base_den_pow = base_den.pow(exp_num_u32);
                 let scale_pow = scale_abs.pow(exp_den_u32);
@@ -462,7 +464,7 @@ impl SafeInt {
                 return None;
             }
 
-            if exp_num_u32 <= MAX_EXACT_EXPONENT {
+            if exp_num_u32 <= MAX_EXACT_EXPONENT && exp_den_u32 <= MAX_EXACT_EXPONENT{
                 // base^(exp_num/exp_den) * scale
                 //
                 // Compute:
@@ -1836,6 +1838,72 @@ fn pow_ratio_scaled_handles_extreme_delta_x() {
     assert!(
         delta <= SafeInt::from(1_000_000u128),
         "result {result} vs expected {expected} (delta {delta})"
+    );
+}
+
+#[test]
+fn pow_ratio_scaled_with_crafted_gcd_values() {
+    /*
+        w1_safe and w2_safe are picked with the following rules:
+           - they don't have GCD > 1
+           - w1_safe < 1024
+           - bits(w2_safe) <= 32
+     */
+    let x_safe = SafeInt::from_str("2100000000000000000000000").unwrap();
+    let denominator = SafeInt::from_str("210000000000000000000000").unwrap();
+    let w1_safe = SafeInt::from_str("499").unwrap();
+    let w2_safe = SafeInt::from_str("1538820023").unwrap();
+    let precision = 256;
+    let perquintill_scale = SafeInt::from_str("1000000000000000000").unwrap();
+
+    let start = Instant::now();
+
+    SafeInt::pow_ratio_scaled(
+        &x_safe,
+        &denominator,
+        &w1_safe,
+        &w2_safe,
+        precision,
+        &perquintill_scale,
+    );
+    let elapsed = start.elapsed();
+
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "pow_ratio_scaled took {:?} (expected < 1s)",
+        elapsed
+    );
+}
+
+#[test]
+fn pow_bigint_base_with_crafted_gcd_values() {
+    /*
+        w1_safe and w2_safe are picked with the following rules:
+           - they don't have GCD > 1
+           - w1_safe < 1024
+           - bits(w2_safe) <= 32
+     */
+    let x_safe = SafeInt::from_str("2100000000000000000000000").unwrap();
+    let w1_safe = SafeInt::from_str("499").unwrap();
+    let w2_safe = SafeInt::from_str("1538820023").unwrap();
+    let precision = 256;
+    let perquintill_scale = SafeInt::from_str("1000000000000000000").unwrap();
+
+    let start = Instant::now();
+
+    SafeInt::pow_bigint_base(
+        &x_safe,
+        &w1_safe,
+        &w2_safe,
+        precision,
+        &perquintill_scale,
+    );
+    let elapsed = start.elapsed();
+
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "pow_ratio_scaled took {:?} (expected < 1s)",
+        elapsed
     );
 }
 
