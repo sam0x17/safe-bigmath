@@ -1571,6 +1571,24 @@ fn general() {
 }
 
 #[test]
+fn test_safe_int_cmp_self() {
+    let a = SafeInt::from(5);
+    let b = SafeInt::from(7);
+    let a2 = a.clone();
+
+    assert_eq!(a, a2);
+    assert_ne!(a, b);
+    assert!(a < b);
+    assert!(b > a);
+    assert!(a <= a2);
+    assert!(a >= a2);
+    assert_eq!(a.partial_cmp(&b), Some(Ordering::Less));
+    assert_eq!(b.partial_cmp(&a), Some(Ordering::Greater));
+    assert_eq!(a.cmp(&a2), Ordering::Equal);
+    assert_eq!((&a).cmp(&b), Ordering::Less);
+}
+
+#[test]
 fn test_perquintill_power() {
     const PRECISION: u32 = 256;
     const PERQUINTILL: u128 = 1_000_000_000_000_000_000;

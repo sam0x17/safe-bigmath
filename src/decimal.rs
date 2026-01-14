@@ -5,7 +5,7 @@ use crate::{SafeInt, parsing::ParsedSafeDec};
 use alloc::string::ToString;
 #[cfg(test)]
 use alloc::vec::Vec;
-use core::{fmt::Display, ops::*, str::FromStr};
+use core::{cmp::Ordering, fmt::Display, ops::*, str::FromStr};
 use lencode::dedupe::{DedupeDecoder, DedupeEncoder};
 #[cfg(test)]
 use lencode::io::Cursor;
@@ -865,6 +865,73 @@ impl<const D: usize> Div<&SafeDec<D>> for &SafeInt {
     }
 }
 
+impl<const D: usize> PartialEq<SafeInt> for SafeDec<D> {
+    #[inline(always)]
+    fn eq(&self, other: &SafeInt) -> bool {
+        self.0 == SafeDec::<D>::scale_up(other)
+    }
+}
+
+impl<const D: usize> PartialOrd<SafeInt> for SafeDec<D> {
+    #[inline(always)]
+    fn partial_cmp(&self, other: &SafeInt) -> Option<Ordering> {
+        self.0.partial_cmp(&SafeDec::<D>::scale_up(other))
+    }
+}
+
+impl<const D: usize> PartialEq<SafeDec<D>> for SafeInt {
+    #[inline(always)]
+    fn eq(&self, other: &SafeDec<D>) -> bool {
+        SafeDec::<D>::scale_up(self) == other.0
+    }
+}
+
+impl<const D: usize> PartialOrd<SafeDec<D>> for SafeInt {
+    #[inline(always)]
+    fn partial_cmp(&self, other: &SafeDec<D>) -> Option<Ordering> {
+        SafeDec::<D>::scale_up(self).partial_cmp(&other.0)
+    }
+}
+
+macro_rules! impl_decimal_cmp_for_primitive {
+    ($($prim:ty),*) => {
+        $(
+            impl<const D: usize> PartialEq<$prim> for SafeDec<D> {
+                #[inline(always)]
+                fn eq(&self, other: &$prim) -> bool {
+                    self.0 == SafeDec::<D>::scale_up(&SafeInt::from(*other))
+                }
+            }
+
+            impl<const D: usize> PartialOrd<$prim> for SafeDec<D> {
+                #[inline(always)]
+                fn partial_cmp(&self, other: &$prim) -> Option<Ordering> {
+                    self.0
+                        .partial_cmp(&SafeDec::<D>::scale_up(&SafeInt::from(*other)))
+                }
+            }
+
+            impl<const D: usize> PartialEq<SafeDec<D>> for $prim {
+                #[inline(always)]
+                fn eq(&self, other: &SafeDec<D>) -> bool {
+                    SafeDec::<D>::scale_up(&SafeInt::from(*self)) == other.0
+                }
+            }
+
+            impl<const D: usize> PartialOrd<SafeDec<D>> for $prim {
+                #[inline(always)]
+                fn partial_cmp(&self, other: &SafeDec<D>) -> Option<Ordering> {
+                    SafeDec::<D>::scale_up(&SafeInt::from(*self)).partial_cmp(&other.0)
+                }
+            }
+        )*
+    };
+}
+
+impl_decimal_cmp_for_primitive!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
+
 impl<const D: usize, O> AddAssign<O> for SafeDec<D>
 where
     SafeDec<D>: Add<O, Output = SafeDec<D>>,
@@ -958,6 +1025,63 @@ fn test_safe_dec_safe_int_div() {
     let b = SafeInt::from(654321);
     let c = b / a;
     assert_eq!(c, Some(SafeDec::from_raw(654321 / 123456)));
+}
+
+#[test]
+fn test_safe_dec_cmp_primitives() {
+    let dec = SafeDec::<2>::from_raw(100);
+    assert_eq!(dec, 1);
+    assert_eq!(1, dec);
+    assert!(dec >= 1);
+    assert!(dec <= 1);
+    assert!(dec < 2);
+    assert!(2 > dec);
+
+    let dec = SafeDec::<2>::from_raw(150);
+    assert_ne!(dec, 1);
+    assert!(dec > 1);
+    assert!(1 < dec);
+
+    let neg = SafeDec::<2>::from_raw(-200);
+    assert_eq!(neg, -2);
+    assert_ne!(neg, -3);
+    assert!(neg < -1);
+    assert!(-1 > neg);
+
+    let neg_frac = SafeDec::<2>::from_raw(-250);
+    assert_ne!(neg_frac, -2);
+    assert!(neg_frac < -2);
+    assert!(-2 > neg_frac);
+
+    let unsigned = SafeDec::<3>::from_raw(12_000);
+    assert_eq!(unsigned, 12u64);
+    assert!(unsigned >= 12u64);
+    assert!(unsigned < 13u64);
+
+    let zero_scale = SafeDec::<0>::from_raw(42);
+    assert_eq!(zero_scale, 42);
+    assert!(zero_scale > 10);
+}
+
+#[test]
+fn test_safe_dec_cmp_safe_int() {
+    let int = SafeInt::from(2);
+    let dec = SafeDec::<2>::from_raw(200);
+    assert_eq!(dec, int);
+    assert_eq!(int, dec);
+    assert!(dec >= int);
+    assert!(int <= dec);
+
+    let dec = SafeDec::<3>::from_raw(1500);
+    let int = SafeInt::from(1);
+    assert!(dec > int);
+    assert!(int < dec);
+    assert_ne!(dec, int);
+
+    let neg_dec = SafeDec::<2>::from_raw(-50);
+    let zero = SafeInt::zero();
+    assert!(neg_dec < zero);
+    assert!(zero > neg_dec);
 }
 
 #[test]
