@@ -12,6 +12,14 @@ use lencode::io::Cursor;
 use lencode::io::{Read, Write};
 use lencode::{Decode, Encode};
 use quoth::Parsable;
+#[cfg(test)]
+use std::time::{Duration, Instant};
+
+/// Defines maximum decimal places for `SafeDec`
+pub const MAX_DECIMAL_PLACES: usize = 1000000;
+
+/// Defines maximum decimal places for `SafeDec` fmt()
+pub const MAX_DECIMAL_PLACES_FMT: usize = 10000;
 
 /// Fixed-point decimal built on top of `SafeInt` with `D` fractional digits.
 ///
@@ -36,10 +44,17 @@ impl<const D: usize> SafeDec<D> {
     }
 
     fn scale_up(other: &SafeInt) -> SafeInt {
+        const {
+            assert!(D < MAX_DECIMAL_PLACES);
+        }
+
         other * SafeInt::from(10).pow(D as u32)
     }
 
     fn scale_down(other: &SafeInt) -> SafeInt {
+        const {
+            assert!(D < MAX_DECIMAL_PLACES);
+        }
         (other / SafeInt::from(10).pow(D as u32)).unwrap_or(0.into())
     }
 
@@ -68,6 +83,14 @@ impl<const D: usize> SafeDec<D> {
     /// assert_eq!(b.to_string(), "1.24");
     /// ```
     pub fn from_other_scale<const D2: usize>(other: SafeDec<D2>) -> Self {
+        const {
+            if D2 > D {
+                assert!(D2 - D < MAX_DECIMAL_PLACES);
+            } else {
+                assert!(D - D2 < MAX_DECIMAL_PLACES);
+            }
+        }
+
         if D2 > D {
             SafeDec((other.0.ceil_div(SafeInt::from(10).pow((D2 - D) as u32))).unwrap())
         } else {
@@ -88,6 +111,10 @@ impl<const D: usize> FromStr for SafeDec<D> {
 
 impl<const D: usize> Display for SafeDec<D> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        const {
+            assert!(D < MAX_DECIMAL_PLACES_FMT);
+        }
+
         let ten = SafeInt::from(10);
         let divisor = ten.clone().pow(D as u32);
         let abs_value = self.0.clone().abs();
@@ -1189,11 +1216,66 @@ fn lencode_safe_dec_matches_safe_int_encoding() {
     assert_eq!(dec_buf, int_buf);
 }
 
-// TODO: Restore and fix the bug
-// #[test]
-// fn test_large_safe_dec_const_difference() {
-//     let a = "123.455".parse::<SafeDec<3>>().unwrap();
-//     let b = SafeDec::<400000>::from_other_scale(a);
-//
-//     assert_eq!(b.to_string().as_str(), "123.4550");
-// }
+#[test]
+fn test_large_safe_dec_const_difference() {
+    let start = Instant::now();
+
+    let a = "123.455".parse::<SafeDec<3>>().unwrap();
+    let _b = SafeDec::<1000000>::from_other_scale(a);
+
+    let elapsed = start.elapsed();
+
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "from_other_scale took {:?} (expected < 1s)",
+        elapsed
+    );
+}
+
+#[test]
+fn test_scale_down_with_decimal_places() {
+    let start = Instant::now();
+
+    let a = "1234".parse::<SafeInt>().unwrap();
+    let _b = SafeDec::<999999>::scale_down(&a);
+
+    let elapsed = start.elapsed();
+
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "scale_down took {:?} (expected < 1s)",
+        elapsed
+    );
+}
+
+#[test]
+fn test_scale_up_with_decimal_places() {
+    let start = Instant::now();
+
+    let a = "1234".parse::<SafeInt>().unwrap();
+    let _b = SafeDec::<999999>::scale_up(&a);
+
+    let elapsed = start.elapsed();
+
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "scale_up took {:?} (expected < 1s)",
+        elapsed
+    );
+}
+
+#[test]
+fn test_display_with_decimal_places() {
+    let start = Instant::now();
+
+    let b = SafeDec::<9999>::zero();
+    let _res = b.to_string();
+
+    let elapsed = start.elapsed();
+
+    assert!(
+        elapsed < Duration::from_secs(1),
+        "scale_up took {:?} (expected < 1s)",
+        elapsed
+    );
+}
